@@ -1,0 +1,189 @@
+.cal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.58);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.cal-modal {
+  width: min(1100px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.38);
+}
+
+.cal-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.cal-modal-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.cal-modal-header p,
+.cal-modal-info p {
+  color: var(--text-muted);
+}
+
+.cal-modal-close {
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.cal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.cal-btn-edit {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 18px;
+  cursor: pointer;
+  background: #ef4444;
+  color: white;
+  font-weight: 700;
+}
+
+.cal-btn-edit.activo {
+  background: #22c55e;
+}
+
+.cal-aviso {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #22c55e;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.cal-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+}
+
+.cal-modal-calendar,
+.cal-modal-info {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.cal-modal .react-calendar {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.cal-modal .react-calendar__navigation button {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.cal-modal .react-calendar__tile {
+  min-height: 72px;
+  border-radius: 12px;
+  color: var(--text-primary);
+}
+
+.cal-modal .react-calendar__tile:hover {
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.cal-modal .react-calendar__tile--now {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #60a5fa;
+  font-weight: 800;
+}
+
+.cal-modal .dia-ingreso {
+  background: rgba(34, 197, 94, 0.9) !important;
+  color: white !important;
+  font-weight: 800;
+}
+
+.cal-modal .dia-no-laboral {
+  background: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  font-weight: 800;
+}
+
+.cal-dias-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cal-dia-chip {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 700;
+}
+
+.cal-dia-chip:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.cal-leyenda {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.cal-leyenda span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-leyenda b {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.leyenda-ingreso {
+  background: #22c55e;
+}
+
+.leyenda-no-laboral {
+  background: #ef4444;
+}
+
+@media (max-width: 900px) {
+  .cal-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}

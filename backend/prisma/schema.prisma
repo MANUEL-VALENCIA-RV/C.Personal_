@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  password            String
+  nombre              String
+  rol                 String    @default("admin")
+  intentosFallidos    Int       @default(0)
+  bloqueadoHasta      DateTime?
+  ultimoAcceso        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  debeCambiarPassword Boolean   @default(true)
+}
+
+model Trabajador {
+  id                     Int                @id @default(autoincrement())
+  nombre                 String
+  empresa                String             @default("N/A")
+  puesto                 String
+  area                   String
+  telefono               String             @default("N/A")
+  correo                 String             @default("N/A")
+  fechaIngreso           String
+  estado                 String             @default("Activo")
+  foto                   String?
+  datos_completos        Json               @default("{}")
+  aptitudes              Json               @default("{}")
+  resultado_psicometrico Json?
+  documentos             Json               @default("{}")
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  empresaId              Int?
+  CursosTrabajador       CursosTrabajador[]
+  eventosCalendario      EventoCalendario[]
+  observaciones          Observacion[]
+  empresaRel             Empresa?           @relation(fields: [empresaId], references: [id])
+}
+
+model Empresa {
+  id           Int          @id @default(autoincrement())
+  nombre       String       @unique
+  color        String       @default("#3b82f6")
+  activa       Boolean      @default(true)
+  orden        Int          @default(0)
+  trabajadores Trabajador[]
+}
+
+model CampoFormulario {
+  id          Int      @id @default(autoincrement())
+  seccion     String
+  nombre      String
+  etiqueta    String
+  tipo        String   @default("text")
+  obligatorio Boolean  @default(false)
+  activo      Boolean  @default(true)
+  orden       Int      @default(0)
+  opciones    Json?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([seccion, nombre])
+}
+
+model DocumentoRequerido {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique
+  activo Boolean @default(true)
+  orden  Int     @default(0)
+}
+
+model AptitudConfig {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique
+  activo Boolean @default(true)
+  orden  Int     @default(0)
+}
+
+model SeccionExpediente {
+  id     Int     @id @default(autoincrement())
+  clave  String  @unique
+  titulo String
+  activo Boolean @default(true)
+  orden  Int     @default(0)
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  email     String
+  ip        String
+  exitoso   Boolean
+  createdAt DateTime @default(now())
+}
+
+model Observacion {
+  id           Int        @id @default(autoincrement())
+  trabajadorId Int
+  texto        String
+  importante   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}
+
+model EventoCalendario {
+  id           Int         @id @default(autoincrement())
+  trabajadorId Int?
+  titulo       String
+  descripcion  String?
+  fecha        DateTime
+  tipo         String      @default("general")
+  createdAt    DateTime    @default(now())
+  trabajador   Trabajador? @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}
+
+model CursosTrabajador {
+  id           Int        @id @default(autoincrement())
+  trabajadorId Int
+  curso        String
+  fecha        DateTime?
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}

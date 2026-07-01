@@ -1,0 +1,1 @@
+.admin-color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.admin-color-btn{width:36px;height:36px;border-radius:10px;border:2px solid transparent;cursor:pointer;transition:all .15s}.admin-color-btn:hover{transform:scale(1.1)}.admin-color-active{border-color:var(--text-primary)!important;box-shadow:0 0 0 2px var(--bg-card),0 0 0 4px var(--text-primary)}
