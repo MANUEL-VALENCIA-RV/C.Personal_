@@ -18,8 +18,11 @@ async function main() {
     console.log('Agrega ADMIN_PASSWORD a .env para personalizar la contraseña del admin.')
     console.log('Se usará la contraseña por defecto solo para desarrollo.\n')
   }
+if (!ADMIN_PASSWORD) {
+  throw new Error('ADMIN_PASSWORD no definida en el archivo .env')
+}
 
-  const password = ADMIN_PASSWORD || 'AdminRH2025!Seguro'
+const password = ADMIN_PASSWORD
   const hashed = await bcrypt.hash(password, 12)
 
   for (const rawEmail of ADMIN_EMAILS) {
@@ -37,10 +40,18 @@ async function main() {
     }
   }
 
-  const usuariosExtra = [
-    { email: 'luisperedo@vdtconstrucciones.com', nombre: 'Luis Peredo', password: 'BIENVENID@2026' },
-    { email: 'isaaccruz@vdtconstrucciones.com', nombre: 'Isaac Cruz', password: 'BIENVENID@S2026<>' }
-  ]
+ const usuariosExtra = [
+  {
+    email: 'usuario.demo@demo.com',
+    nombre: 'Usuario Demo',
+    password: 'Demo123456!'
+  },
+  {
+    email: 'empleado.demo@demo.com',
+    nombre: 'Empleado Demo',
+    password: 'Demo123456!'
+  }
+]
 
   for (const u of usuariosExtra) {
     const existe = await prisma.usuario.findUnique({ where: { email: u.email } })
