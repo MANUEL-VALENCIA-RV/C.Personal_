@@ -5,6 +5,7 @@ import { useCamposFormulario } from '../hooks/useCamposFormulario.js'
 import { obtenerTrabajadorActivoId } from '../db/api.js'
 import { useCursos, useCrearCurso, useActualizarCurso, useEliminarCurso } from '../hooks/useCursos.js'
 import DocumentoDropzone, { documentacionCampos } from '../components/DocumentoDropzone.jsx'
+import VisualizadorDocumentos from '../components/VisualizadorDocumentos.jsx'
 import CalendarioModal from './CalendarioModal.jsx'
 import {
   User, MapPin, Briefcase, Phone, Shirt, FileText, ArrowLeft,
@@ -676,6 +677,11 @@ export default function Expediente() {
       {tab === 1 && <div className="exp-content"><AptitudesContent data={data} navigate={navigate} /></div>}
       {tab === 2 && (
         <div className="exp-content">
+          <SeccionCard titulo="Documentos Guardados" icon={Eye}>
+            <p className="exp-section-desc">Visualiza o descarga los documentos que ya fueron cargados para este trabajador.</p>
+            <VisualizadorDocumentos documentos={data.documentos} campos={documentacionCampos} />
+          </SeccionCard>
+
           <SeccionCard titulo="Archivo Digital de Documentos" icon={FileText}>
             <p className="exp-section-desc">Arrastra los archivos directamente a cada sección.</p>
             <div className="docs-upload-grid">

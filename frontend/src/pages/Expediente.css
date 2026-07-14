@@ -1,5 +1,21 @@
 .exp-page{min-height:100vh;background:var(--bg-primary);color:var(--text-primary);font-family:Inter,system-ui,-apple-system,sans-serif;max-width:1400px;margin:0 auto}
 
+/* Visualizador de documentos guardados */
+.vis-docs-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;color:var(--text-muted);text-align:center}
+.vis-docs-empty svg{opacity:.5}
+.vis-docs-empty p{margin:0;font-size:13px}
+.vis-docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.vis-doc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
+.vis-doc-card:hover{border-color:var(--primary-shadow);transform:translateY(-2px)}
+.vis-doc-preview{height:100px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vis-doc-preview img{width:100%;height:100%;object-fit:cover}
+.vis-doc-icono{color:var(--primary-light);display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--primary-shadow)}
+.vis-doc-info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.vis-doc-nombre{font-size:12px;font-weight:700;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vis-doc-acciones{display:flex;gap:6px}
+.vis-doc-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:11px;font-weight:600;text-decoration:none;cursor:pointer;transition:all .2s}
+.vis-doc-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+
 /* Empty state */
 .exp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:16px}
 .exp-empty-icon{width:80px;height:80px;border-radius:20px;background:var(--primary-shadow);display:flex;align-items:center;justify-content:center;color:var(--primary-light);margin-bottom:8px}
