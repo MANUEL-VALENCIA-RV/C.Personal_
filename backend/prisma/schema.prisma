@@ -42,6 +42,24 @@ model Trabajador {
   eventosCalendario      EventoCalendario[]
   observaciones          Observacion[]
   empresaRel             Empresa?           @relation(fields: [empresaId], references: [id])
+
+  driveFolderId          String?         
+
+  
+  Documentos             Documento[]
+}
+
+
+model Documento {
+  id           Int       @id @default(autoincrement())
+  trabajadorId Int
+  driveFileId  String    @unique
+  nombre       String
+  mimeType     String?
+  carpetaId    String?    // folderId donde se guardó (opcional)
+  creadoAt     DateTime  @default(now())
+
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
 }
 
 model Empresa {
