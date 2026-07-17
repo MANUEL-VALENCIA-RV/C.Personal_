@@ -16,6 +16,7 @@ import configuracionRoutes from './routes/configuracion.js'
 import observacionesRoutes from './routes/observaciones.js'
 import cursosRoutes from './routes/cursos.js'
 import calendarioRoutes from './routes/calendario.js'
+import documentosRoutes from './routes/documentos.js'
 import { verificarToken } from './middleware/auth.js'
 
 const { PrismaClient } = prismaPkg
@@ -85,6 +86,7 @@ app.use('/api/trabajadores', verificarToken, trabajadoresRoutes)
 app.use('/api/observaciones', verificarToken, observacionesRoutes)
 app.use('/api/cursos-trabajador', verificarToken, cursosRoutes)
 app.use('/api/calendario', verificarToken, calendarioRoutes)
+app.use('/api/documentos', verificarToken, documentosRoutes)
 
 app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
