@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrabajador, useActualizarTrabajador } from '../hooks/useTrabajadores.js'
 import { useCamposFormulario } from '../hooks/useCamposFormulario.js'
-import { obtenerTrabajadorActivoId, obtenerDocumentos } from '../db/api.js'
+import { obtenerTrabajadorActivoId, obtenerDocumentos, eliminarDocumento } from '../db/api.js'
 import { useCursos, useCrearCurso, useActualizarCurso, useEliminarCurso } from '../hooks/useCursos.js'
 import DocumentoDropzone, { documentacionCampos } from '../components/DocumentoDropzone.jsx'
 import VisualizadorDocumentos from '../components/VisualizadorDocumentos.jsx'
@@ -582,6 +582,7 @@ export default function Expediente() {
   const [tab, setTab] = useState(0)
   const [docsDrive, setDocsDrive] = useState([])
   const [cargandoDocs, setCargandoDocs] = useState(false)
+  const [errorDocs, setErrorDocs] = useState(null)
   const [mostrarCalendario, setMostrarCalendario] = useState(false)
 
   const idParaCargar = urlId || obtenerTrabajadorActivoId()
@@ -591,11 +592,13 @@ export default function Expediente() {
   const cargarDocumentos = async () => {
     if (!trabajador?.id) return
     setCargandoDocs(true)
+    setErrorDocs(null)
     try {
       const res = await obtenerDocumentos(trabajador.id)
       setDocsDrive(res.documentos || [])
     } catch (err) {
       console.error('Error cargando documentos:', err)
+      setErrorDocs('Error al cargar documentos. Intenta de nuevo.')
     } finally {
       setCargandoDocs(false)
     }
@@ -620,6 +623,16 @@ export default function Expediente() {
       }
       return [...prev, doc]
     })
+  }
+
+  const onDeleteDocument = async (documentoId, campo) => {
+    try {
+      await eliminarDocumento(documentoId)
+      setDocsDrive(prev => prev.filter(d => d.id !== documentoId))
+    } catch (err) {
+      console.error('Error eliminando documento:', err)
+      alert('Error al eliminar el documento.')
+    }
   }
 
   if (isLoading) return null
@@ -666,7 +679,6 @@ export default function Expediente() {
           <button type="button" className="exp-btn-edit" disabled={isEmpty} onClick={() => navigate('/editar/' + data.id)}><Pencil size={16} />Editar Información</button>
           {data.id && data.id !== '---' && (
             <>
-            <button type="button" className="exp-btn-edit exp-btn-pdf" onClick={() => navigate(`/pdf/${data.id}`)}><Download size={16} />PDF</button>
             <button type="button" className="exp-btn-edit" disabled={isEmpty} onClick={() => setMostrarCalendario(true)}><CalendarIcon size={16} />Calendario</button>
             <button
               type="button"
@@ -701,8 +713,10 @@ export default function Expediente() {
             <p className="exp-section-desc">Visualiza o descarga los documentos que ya fueron cargados para este trabajador.</p>
             {cargandoDocs ? (
               <p className="exp-empty-text">Cargando documentos...</p>
+            ) : errorDocs ? (
+              <p className="exp-empty-text" style={{ color: '#ef4444' }}>{errorDocs}</p>
             ) : (
-              <VisualizadorDocumentos documentos={docsDrive} campos={documentacionCampos} />
+              <VisualizadorDocumentos documentos={docsDrive} campos={documentacionCampos} onDelete={onDeleteDocument} />
             )}
           </SeccionCard>
 

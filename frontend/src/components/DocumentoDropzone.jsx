@@ -45,7 +45,7 @@ export default function DocumentoDropzone({ campo, trabajadorId, doc, onUploadCo
     setSubiendo(true)
     setError(null)
     try {
-      const resultado = await subirDocumento(trabajadorId, f)
+      const resultado = await subirDocumento(trabajadorId, f, campo)
       onUploadComplete(campo, resultado.documento)
     } catch (err) {
       setError(err.message)
@@ -72,6 +72,7 @@ export default function DocumentoDropzone({ campo, trabajadorId, doc, onUploadCo
       <input 
         id={`file-${campo}`}
         type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt"
         style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files[0])}
         disabled={subiendo}

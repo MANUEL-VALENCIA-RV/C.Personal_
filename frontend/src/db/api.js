@@ -323,9 +323,10 @@ export const eliminarEventoCalendario = async (id) => {
   return handleResponse(res)
 }
 
-export const subirDocumento = async (trabajadorId, file) => {
+export const subirDocumento = async (trabajadorId, file, campo) => {
   const formData = new FormData()
   formData.append('file', file)
+  if (campo) formData.append('campo', campo)
 
   const res = await fetch(`${API}/documentos/${trabajadorId}/upload`, {
     method: 'POST',

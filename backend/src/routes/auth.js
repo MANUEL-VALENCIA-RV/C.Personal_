@@ -24,6 +24,12 @@ const loginLimiter = rateLimit({
   message: { error: 'Demasiados intentos. Espera 15 minutos.' }
 })
 
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiados intentos de cambio de contraseña. Espera 15 minutos.' }
+})
+
 router.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body
@@ -100,7 +106,7 @@ router.get('/verify', verificarToken, async (req, res, next) => {
   }
 })
 
-router.post('/cambiar-password', verificarToken, async (req, res, next) => {
+router.post('/cambiar-password', verificarToken, passwordLimiter, async (req, res, next) => {
   try {
     const { passwordActual, passwordNueva } = req.body
 

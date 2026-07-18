@@ -11,3 +11,26 @@ backend/node_modules/
 frontend/node_modules/
 backend/.env
 backend/prisma/importar-datos.js
+
+# Google Drive credentials
+credentials-drive.json
+*-credentials.json
+*-service-account.json
+
+# Temp files
+temp-uploads/
+
+# Extracted documents
+documentos_extraidos/
+
+# Utility scripts with hardcoded secrets
+backend/vacuum_db.mjs
+backend/check_size.mjs
+backend/check_docs*.cjs
+backend/check_docs*.mjs
+backend/extraer-documentos.mjs
+backend/auth-oauth2.mjs
+backend/test-oauth.mjs
+backend/reset-password.js
+backend/create-shared-drive.mjs
+backend/list-drives.mjs

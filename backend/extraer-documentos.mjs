@@ -1,9 +1,11 @@
 import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const pool = new Pool({
-  connectionString: 'postgresql://postgres.wcapgkldhsxmqtwicxox:manuel071125T%2Bqm@aws-1-us-east-2.pooler.supabase.com:6543/postgres',
+  connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 15000,
   statement_timeout: 60000,
   idle_in_transaction_session_timeout: 60000,

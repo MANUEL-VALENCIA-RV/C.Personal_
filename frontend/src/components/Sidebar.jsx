@@ -99,9 +99,6 @@ export default function Sidebar() {
               <NavLink to="/expediente" className={({ isActive }) => 'nav ' + (isActive ? 'active' : '')} onClick={handleNavClick}>
                 <FolderOpen size={20} />Expediente
               </NavLink>
-              <NavLink to="/pdf" className={({ isActive }) => 'nav ' + (isActive ? 'active' : '')} onClick={handleNavClick}>
-                <FileText size={20} />PDF
-              </NavLink>
             </nav>
             <div className="sidebar-section-label">Administración</div>
             <nav>

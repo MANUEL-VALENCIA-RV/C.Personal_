@@ -46,6 +46,16 @@ export async function uploadDocumento(file, trabajadorNombre) {
       fields: 'id, webViewLink, name, mimeType, createdTime',
     })
 
+    // Hacer el archivo públicamente visible para previsualización
+    await drive.permissions.create({
+      auth,
+      fileId: response.data.id,
+      resource: {
+        role: 'reader',
+        type: 'anyone',
+      },
+    })
+
     fs.unlinkSync(file.path)
 
     return {
@@ -62,9 +72,11 @@ export async function uploadDocumento(file, trabajadorNombre) {
 
 async function getOrCreateFolder(auth, folderName, parentId) {
   try {
+    // Sanitizar nombre de carpeta para evitar inyección en Drive query
+    const safeName = folderName.replace(/['\\]/g, '')
     const response = await drive.files.list({
       auth,
-      q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
+      q: `name='${safeName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
       spaces: 'drive',
       pageSize: 1,
       fields: 'files(id)',

@@ -80,9 +80,9 @@
 
 /* KPI Grid */
 .apt-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
-.apt-kpi-card{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:13px;transition:all .2s}
+.apt-kpi-card{display:flex;align-items:flex-start;gap:14px;padding:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;transition:all .2s}
 .apt-kpi-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 24px var(--shadow-lg)}
-.apt-kpi-icon{width:42px;height:42px;border-radius:11px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--kpi-accent, var(--primary-light));flex-shrink:0}
+.apt-kpi-icon{width:44px;height:44px;border-radius:12px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--kpi-accent, var(--primary-light));flex-shrink:0}
 .apt-kpi-body{display:flex;flex-direction:column;gap:2px}
 .apt-kpi-value{font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.1;letter-spacing:-0.5px}
 .apt-kpi-label{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.3px}

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { actualizarTrabajador, obtenerTrabajadorPorId, calcularTerman, obtenerDocumentos } from '../db/api.js'
+import { actualizarTrabajador, obtenerTrabajadorPorId, calcularTerman, obtenerDocumentos, eliminarDocumento } from '../db/api.js'
 import { useEmpresas } from '../hooks/useEmpresas.js'
 import { useCamposAgrupados, GrupoCamposDinamico } from '../components/FormularioDinamico.jsx'
 import DocumentoDropzone, { documentacionCampos } from '../components/DocumentoDropzone.jsx'
+import VisualizadorDocumentos from '../components/VisualizadorDocumentos.jsx'
 import {
   BookOpen, Scale, Book, Combine, Target, Search, BrainCircuit,
   ClipboardList, Layout, Eye, BarChart3, TrendingUp, TrendingDown,
@@ -86,6 +87,7 @@ export default function EditarPersonal() {
   const [foto, setFoto] = useState('')
   const [arrastrando, setArrastrando] = useState(false)
   const [docsDrive, setDocsDrive] = useState([])
+  const [errorDocs, setErrorDocs] = useState(null)
   const [aptValores, setAptValores] = useState({})
   const [aptFecha, setAptFecha] = useState(new Date().toISOString().split('T')[0])
   const [aptEvaluador, setAptEvaluador] = useState('')
@@ -117,11 +119,13 @@ export default function EditarPersonal() {
 
   const cargarDocumentos = async () => {
     if (!selectedWorker?.id) return
+    setErrorDocs(null)
     try {
       const res = await obtenerDocumentos(selectedWorker.id)
       setDocsDrive(res.documentos || [])
     } catch (err) {
       console.error('Error cargando documentos:', err)
+      setErrorDocs('Error al cargar documentos.')
     }
   }
 
@@ -163,6 +167,16 @@ export default function EditarPersonal() {
       }
       return [...prev, doc]
     })
+  }
+
+  const onDeleteDocument = async (documentoId, campo) => {
+    try {
+      await eliminarDocumento(documentoId)
+      setDocsDrive(prev => prev.filter(d => d.id !== documentoId))
+    } catch (err) {
+      console.error('Error eliminando documento:', err)
+      alert('Error al eliminar el documento.')
+    }
   }
 
   const guardarTrabajador = async (e) => {
@@ -370,12 +384,12 @@ export default function EditarPersonal() {
       </div>
 
       {/* TABS */}
-      <div className="tabs">
+      <div className="exp-tabs">
         {tabs.map((titulo, index) => (
           <button
             key={titulo}
             type="button"
-            className={tab === index ? 'btn' : 'btn2'}
+            className={`exp-tab ${tab === index ? 'active' : ''}`}
             onClick={() => setTab(index)}
           >
             {titulo}
@@ -512,24 +526,40 @@ export default function EditarPersonal() {
       {/* TAB DOCUMENTACIÓN */}
       {tab === 2 && (
         <div className="card-registro">
-          <div className="header-seccion">
-            <h2>Archivo Digital de Documentos</h2>
-          </div>
-          <p className="muted" style={{ marginBottom: '20px' }}>Arrastra los archivos directamente a cada sección. Se subirán automáticamente a Google Drive.</p>
-          <div className="docs-upload-grid">
-            {documentacionCampos.map((campo) => {
-              const docExistente = docsDrive.find(d => d.nombre === campo)
-              return (
-                <DocumentoDropzone 
-                  key={campo} 
-                  campo={campo} 
-                  trabajadorId={selectedWorker?.id}
-                  doc={docExistente}
-                  onUploadComplete={onUploadComplete}
-                />
-              )
-            })}
-          </div>
+          {selectedWorker ? (
+            <>
+              <div className="header-seccion">
+                <h2>Documentos Guardados</h2>
+              </div>
+              <p className="muted" style={{ marginBottom: '20px' }}>Visualiza los documentos que ya fueron cargados para este trabajador.</p>
+              {errorDocs ? (
+                <p style={{ color: '#ef4444', marginBottom: '20px' }}>{errorDocs}</p>
+              ) : (
+                <VisualizadorDocumentos documentos={docsDrive} campos={documentacionCampos} onDelete={onDeleteDocument} />
+              )}
+
+              <div className="header-seccion" style={{ marginTop: '32px' }}>
+                <h2>Subir Nuevos Documentos</h2>
+              </div>
+              <p className="muted" style={{ marginBottom: '20px' }}>Arrastra los archivos directamente a cada sección. Se subirán automáticamente a Google Drive.</p>
+              <div className="docs-upload-grid">
+                {documentacionCampos.map((campo) => {
+                  const docExistente = docsDrive.find(d => d.nombre === campo)
+                  return (
+                    <DocumentoDropzone 
+                      key={campo} 
+                      campo={campo} 
+                      trabajadorId={selectedWorker.id}
+                      doc={docExistente}
+                      onUploadComplete={onUploadComplete}
+                    />
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="muted">Cargando trabajador...</p>
+          )}
         </div>
       )}
     </section>
