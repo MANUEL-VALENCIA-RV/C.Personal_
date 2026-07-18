@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { subirDocumento } from '../db/api.js'
 
 const DOC_CAMPOS_KEY = 'vdt_doc_campos'
 const CAMPOS_DEFAULT = [
@@ -34,41 +35,47 @@ export function guardarCamposDocumentos(campos) {
 
 export const documentacionCampos = obtenerCamposDocumentos()
 
-export default function DocumentoDropzone({ campo, file, onFileChange }) {
+export default function DocumentoDropzone({ campo, trabajadorId, doc, onUploadComplete }) {
   const [active, setActive] = useState(false)
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleFile = (f) => {
-    if (!f) return
-    const reader = new FileReader()
-    reader.onload = (e) => onFileChange(campo, e.target.result)
-    reader.readAsDataURL(f)
+  const handleFile = async (f) => {
+    if (!f || !trabajadorId) return
+    setSubiendo(true)
+    setError(null)
+    try {
+      const resultado = await subirDocumento(trabajadorId, f)
+      onUploadComplete(campo, resultado.documento)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubiendo(false)
+    }
   }
+
+  const hasFile = !!doc
 
   return (
     <div 
-      className={`doc-dropzone ${active ? 'active' : ''} ${file ? 'has-file' : ''}`}
+      className={`doc-dropzone ${active ? 'active' : ''} ${hasFile ? 'has-file' : ''} ${subiendo ? 'uploading' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setActive(true) }}
       onDragLeave={() => setActive(false)}
       onDrop={(e) => { e.preventDefault(); setActive(false); handleFile(e.dataTransfer.files[0]) }}
-      onClick={() => document.getElementById(`file-${campo}`).click()}
+      onClick={() => { if (!subiendo) document.getElementById(`file-${campo}`).click() }}
     >
       <span className="doc-name">{campo}</span>
-      <span className="doc-status">{file ? '✓ Cargado' : 'Arrastra o haz clic'}</span>
+      <span className="doc-status">
+        {subiendo ? 'Subiendo...' : hasFile ? '✓ Cargado' : 'Arrastra o haz clic'}
+      </span>
+      {error && <span className="doc-error">{error}</span>}
       <input 
         id={`file-${campo}`}
         type="file"
         style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files[0])}
+        disabled={subiendo}
       />
-      {file && (
-        <button 
-          type="button"
-          className="doc-remove" 
-          onClick={(e) => { e.stopPropagation(); onFileChange(campo, null) }}
-        >
-          ✕
-        </button>
-      )}
     </div>
   )
 }

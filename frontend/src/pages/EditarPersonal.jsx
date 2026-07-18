@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { actualizarTrabajador, obtenerTrabajadorPorId, calcularTerman } from '../db/api.js'
+import { actualizarTrabajador, obtenerTrabajadorPorId, calcularTerman, obtenerDocumentos } from '../db/api.js'
 import { useEmpresas } from '../hooks/useEmpresas.js'
 import { useCamposAgrupados, GrupoCamposDinamico } from '../components/FormularioDinamico.jsx'
 import DocumentoDropzone, { documentacionCampos } from '../components/DocumentoDropzone.jsx'
@@ -85,7 +85,7 @@ export default function EditarPersonal() {
   const [datos, setDatos] = useState({})
   const [foto, setFoto] = useState('')
   const [arrastrando, setArrastrando] = useState(false)
-  const [editDocs, setEditDocs] = useState({})
+  const [docsDrive, setDocsDrive] = useState([])
   const [aptValores, setAptValores] = useState({})
   const [aptFecha, setAptFecha] = useState(new Date().toISOString().split('T')[0])
   const [aptEvaluador, setAptEvaluador] = useState('')
@@ -115,6 +115,16 @@ export default function EditarPersonal() {
   const manejarDragOver = (e) => { e.preventDefault(); setArrastrando(true); }
   const manejarDragLeave = () => { setArrastrando(false); }
 
+  const cargarDocumentos = async () => {
+    if (!selectedWorker?.id) return
+    try {
+      const res = await obtenerDocumentos(selectedWorker.id)
+      setDocsDrive(res.documentos || [])
+    } catch (err) {
+      console.error('Error cargando documentos:', err)
+    }
+  }
+
   useEffect(() => {
     if (id) {
       (async () => {
@@ -129,10 +139,6 @@ export default function EditarPersonal() {
             setAptValores(vals)
             setDatos(t.datos_completos || {})
             if (t.foto) setFoto(t.foto)
-            const docs = t.documentos || {}
-            const filled = {}
-            documentacionCampos.forEach(c => { filled[c] = docs[c] || null })
-            setEditDocs(filled)
           }
         } catch (err) {
           setErrorCarga(err.message)
@@ -140,6 +146,24 @@ export default function EditarPersonal() {
       })()
     }
   }, [id])
+
+  useEffect(() => {
+    if (selectedWorker?.id && tab === 2) {
+      cargarDocumentos()
+    }
+  }, [selectedWorker?.id, tab])
+
+  const onUploadComplete = (campo, doc) => {
+    setDocsDrive(prev => {
+      const existe = prev.findIndex(d => d.nombre === campo)
+      if (existe >= 0) {
+        const copia = [...prev]
+        copia[existe] = doc
+        return copia
+      }
+      return [...prev, doc]
+    })
+  }
 
   const guardarTrabajador = async (e) => {
     if(e) e.preventDefault()
@@ -155,14 +179,6 @@ export default function EditarPersonal() {
         : null
       await actualizarTrabajador(selectedWorker.id, { aptitudes: aptData, resultado_psicometrico: resultado })
       alert('Aptitudes guardadas exitosamente.')
-      navigate('/expediente/' + selectedWorker.id)
-      return
-    }
-
-    if (tab === 2) {
-      if (!selectedWorker) return alert('Selecciona un trabajador primero.')
-      await actualizarTrabajador(selectedWorker.id, { documentos: editDocs })
-      alert('Documentos guardados exitosamente.')
       navigate('/expediente/' + selectedWorker.id)
       return
     }
@@ -192,7 +208,6 @@ export default function EditarPersonal() {
       fechaIngreso: datos['Fecha de ingreso'] || new Date().toISOString().split('T')[0],
       estado: 'Activo',
       foto: foto,
-      documentos: editDocs,
       aptitudes: aptData,
       resultado_psicometrico: resultado,
       datos_completos: datos
@@ -500,16 +515,20 @@ export default function EditarPersonal() {
           <div className="header-seccion">
             <h2>Archivo Digital de Documentos</h2>
           </div>
-          <p className="muted" style={{ marginBottom: '20px' }}>Arrastra los archivos directamente a cada sección.</p>
+          <p className="muted" style={{ marginBottom: '20px' }}>Arrastra los archivos directamente a cada sección. Se subirán automáticamente a Google Drive.</p>
           <div className="docs-upload-grid">
-            {documentacionCampos.map((campo) => (
-              <DocumentoDropzone 
-                key={campo} 
-                campo={campo} 
-                file={editDocs[campo]} 
-                onFileChange={(c, f) => setEditDocs({...editDocs, [c]: f})}
-              />
-            ))}
+            {documentacionCampos.map((campo) => {
+              const docExistente = docsDrive.find(d => d.nombre === campo)
+              return (
+                <DocumentoDropzone 
+                  key={campo} 
+                  campo={campo} 
+                  trabajadorId={selectedWorker?.id}
+                  doc={docExistente}
+                  onUploadComplete={onUploadComplete}
+                />
+              )
+            })}
           </div>
         </div>
       )}

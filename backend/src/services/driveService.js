@@ -4,18 +4,18 @@ import fs from 'fs'
 const drive = google.drive('v3')
 
 async function authenticate() {
-  const credentialsPath = process.env.GOOGLE_DRIVE_CREDENTIALS || './credentials-drive.json'
-  
-  if (!fs.existsSync(credentialsPath)) {
-    throw new Error(`Archivo de credenciales no encontrado: ${credentialsPath}`)
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Faltan credenciales OAuth2 en .env (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN)')
   }
 
-  const auth = new google.auth.GoogleAuth({
-    keyFile: credentialsPath,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  })
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret)
+  oauth2Client.setCredentials({ refresh_token: refreshToken })
 
-  return auth.getClient()
+  return oauth2Client
 }
 
 export async function uploadDocumento(file, trabajadorNombre) {
@@ -23,14 +23,12 @@ export async function uploadDocumento(file, trabajadorNombre) {
     const auth = await authenticate()
     const parentFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || 'root'
 
-    // Crear carpeta del trabajador si no existe
     const carpetaId = await getOrCreateFolder(
       auth,
       `${trabajadorNombre}`,
       parentFolderId
     )
 
-    // Subir archivo
     const fileMetadata = {
       name: file.originalname,
       parents: [carpetaId],
@@ -48,7 +46,6 @@ export async function uploadDocumento(file, trabajadorNombre) {
       fields: 'id, webViewLink, name, mimeType, createdTime',
     })
 
-    // Eliminar archivo temporal
     fs.unlinkSync(file.path)
 
     return {
@@ -65,7 +62,6 @@ export async function uploadDocumento(file, trabajadorNombre) {
 
 async function getOrCreateFolder(auth, folderName, parentId) {
   try {
-    // Buscar carpeta existente
     const response = await drive.files.list({
       auth,
       q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
@@ -78,7 +74,6 @@ async function getOrCreateFolder(auth, folderName, parentId) {
       return response.data.files[0].id
     }
 
-    // Crear nueva carpeta
     const folderMetadata = {
       name: folderName,
       mimeType: 'application/vnd.google-apps.folder',

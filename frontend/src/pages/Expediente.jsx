@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrabajador, useActualizarTrabajador } from '../hooks/useTrabajadores.js'
 import { useCamposFormulario } from '../hooks/useCamposFormulario.js'
-import { obtenerTrabajadorActivoId } from '../db/api.js'
+import { obtenerTrabajadorActivoId, obtenerDocumentos } from '../db/api.js'
 import { useCursos, useCrearCurso, useActualizarCurso, useEliminarCurso } from '../hooks/useCursos.js'
 import DocumentoDropzone, { documentacionCampos } from '../components/DocumentoDropzone.jsx'
 import VisualizadorDocumentos from '../components/VisualizadorDocumentos.jsx'
@@ -580,26 +580,46 @@ export default function Expediente() {
   const { id: urlId } = useParams()
   const navigate = useNavigate()
   const [tab, setTab] = useState(0)
-  const [editDocs, setEditDocs] = useState({})
+  const [docsDrive, setDocsDrive] = useState([])
+  const [cargandoDocs, setCargandoDocs] = useState(false)
   const [mostrarCalendario, setMostrarCalendario] = useState(false)
 
   const idParaCargar = urlId || obtenerTrabajadorActivoId()
   const { data: trabajador, isLoading } = useTrabajador(idParaCargar)
   const actualizarMutation = useActualizarTrabajador()
 
-  useEffect(() => {
-    if (trabajador?.documentos) {
-      setEditDocs(trabajador.documentos)
+  const cargarDocumentos = async () => {
+    if (!trabajador?.id) return
+    setCargandoDocs(true)
+    try {
+      const res = await obtenerDocumentos(trabajador.id)
+      setDocsDrive(res.documentos || [])
+    } catch (err) {
+      console.error('Error cargando documentos:', err)
+    } finally {
+      setCargandoDocs(false)
     }
-  }, [trabajador])
+  }
+
+  useEffect(() => {
+    if (trabajador?.id && tab === 2) {
+      cargarDocumentos()
+    }
+  }, [trabajador?.id, tab])
 
   const data = trabajador || WORKER_PLACEHOLDER
   const isEmpty = !trabajador
 
-  const guardarCambiosDocumentos = async () => {
-    if (!trabajador) return
-    await actualizarMutation.mutateAsync({ id: trabajador.id, data: { documentos: editDocs } })
-    alert('Documentación actualizada y guardada.')
+  const onUploadComplete = (campo, doc) => {
+    setDocsDrive(prev => {
+      const existe = prev.findIndex(d => d.nombre === campo)
+      if (existe >= 0) {
+        const copia = [...prev]
+        copia[existe] = doc
+        return copia
+      }
+      return [...prev, doc]
+    })
   }
 
   if (isLoading) return null
@@ -679,20 +699,28 @@ export default function Expediente() {
         <div className="exp-content">
           <SeccionCard titulo="Documentos Guardados" icon={Eye}>
             <p className="exp-section-desc">Visualiza o descarga los documentos que ya fueron cargados para este trabajador.</p>
-            <VisualizadorDocumentos documentos={data.documentos} campos={documentacionCampos} />
+            {cargandoDocs ? (
+              <p className="exp-empty-text">Cargando documentos...</p>
+            ) : (
+              <VisualizadorDocumentos documentos={docsDrive} campos={documentacionCampos} />
+            )}
           </SeccionCard>
 
           <SeccionCard titulo="Archivo Digital de Documentos" icon={FileText}>
-            <p className="exp-section-desc">Arrastra los archivos directamente a cada sección.</p>
+            <p className="exp-section-desc">Arrastra los archivos directamente a cada sección. Se subirán automáticamente a Google Drive.</p>
             <div className="docs-upload-grid">
-              {documentacionCampos.map((campo) => (
-                <DocumentoDropzone key={campo} campo={campo} file={editDocs[campo]} onFileChange={(c, f) => setEditDocs({ ...editDocs, [c]: f })} />
-              ))}
-            </div>
-            <div style={{ marginTop: 20, textAlign: 'right' }}>
-              <button type="button" className="exp-action-btn exp-action-primary" onClick={guardarCambiosDocumentos} disabled={isEmpty}>
-                Guardar Documentación
-              </button>
+              {documentacionCampos.map((campo) => {
+                const docExistente = docsDrive.find(d => d.nombre === campo)
+                return (
+                  <DocumentoDropzone 
+                    key={campo} 
+                    campo={campo} 
+                    trabajadorId={data.id}
+                    doc={docExistente}
+                    onUploadComplete={onUploadComplete}
+                  />
+                )
+              })}
             </div>
           </SeccionCard>
         </div>

@@ -322,3 +322,33 @@ export const eliminarEventoCalendario = async (id) => {
 
   return handleResponse(res)
 }
+
+export const subirDocumento = async (trabajadorId, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${API}/documentos/${trabajadorId}/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  })
+
+  return handleResponse(res)
+}
+
+export const obtenerDocumentos = async (trabajadorId) => {
+  const res = await fetch(`${API}/documentos/${trabajadorId}`, {
+    headers: authHeaders(),
+  })
+
+  return handleResponse(res)
+}
+
+export const eliminarDocumento = async (documentoId) => {
+  const res = await fetch(`${API}/documentos/${documentoId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+
+  return handleResponse(res)
+}
