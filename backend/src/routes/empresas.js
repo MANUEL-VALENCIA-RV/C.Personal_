@@ -1,6 +1,7 @@
 import { Router } from 'express'
-import { prisma } from '../index.js'
-import { broadcast } from '../services/sse.js'
+import { getPrisma } from '../db.js'
+
+const prisma = getPrisma()
 const router = Router()
 
 router.get('/', async (req, res, next) => {
@@ -27,7 +28,6 @@ router.post('/', async (req, res, next) => {
       data: { nombre, color: color || '#3b82f6', orden: (maxOrden._max.orden ?? -1) + 1 }
     })
 
-    broadcast('empresa:created', empresa)
     res.status(201).json(empresa)
   } catch (error) {
     next(error)
@@ -59,8 +59,6 @@ router.put('/:id', async (req, res, next) => {
       })
     }
 
-    broadcast('empresa:updated', actualizada)
-    broadcast('trabajador:updated', { bulk: true })
     res.json(actualizada)
   } catch (error) {
     next(error)
@@ -81,7 +79,6 @@ router.delete('/:id', async (req, res, next) => {
       })
     }
     await prisma.empresa.delete({ where: { id } })
-    broadcast('empresa:deleted', { id })
     res.json({ message: 'Empresa eliminada', id })
   } catch (error) {
     next(error)

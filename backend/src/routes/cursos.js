@@ -1,6 +1,8 @@
 import { Router } from 'express'
-import { prisma } from '../index.js'
-import { broadcast } from '../services/sse.js'
+import { getPrisma } from '../db.js'
+
+const prisma = getPrisma()
+
 
 const router = Router()
 
@@ -67,8 +69,6 @@ router.post('/', async (req, res, next) => {
       }
     })
 
-    broadcast('curso:created', nuevoCurso)
-    broadcast('trabajador:updated', { id: trabajadorId })
     res.status(201).json(nuevoCurso)
   } catch (error) {
     next(error)
@@ -103,8 +103,6 @@ router.put('/:id', async (req, res, next) => {
       }
     })
 
-    broadcast('curso:updated', actualizado)
-    broadcast('trabajador:updated', { id: actualizado.trabajadorId })
     res.json(actualizado)
   } catch (error) {
     next(error)
@@ -125,8 +123,6 @@ router.delete('/:id', async (req, res, next) => {
 
     await prisma.cursosTrabajador.delete({ where: { id } })
 
-    broadcast('curso:deleted', { id, trabajadorId: existente.trabajadorId })
-    broadcast('trabajador:updated', { id: existente.trabajadorId })
     res.json({ message: 'Curso eliminado', id })
   } catch (error) {
     next(error)

@@ -4,9 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
-import prismaPkg from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
+import { getPrisma } from './db.js'
 
 import trabajadoresRoutes from './routes/trabajadores.js'
 import authRoutes from './routes/auth.js'
@@ -19,22 +17,9 @@ import calendarioRoutes from './routes/calendario.js'
 import documentosRoutes from './routes/documentos.js'
 import { verificarToken } from './middleware/auth.js'
 
-const { PrismaClient } = prismaPkg
-
 const app = express()
-const PORT = process.env.PORT || 3001
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 const ES_PRODUCCION = process.env.NODE_ENV === 'production'
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 5,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-})
-
-const adapter = new PrismaPg(pool)
-export const prisma = new PrismaClient({ adapter })
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -62,6 +47,7 @@ app.use('/api/', limiterGeneral)
 
 app.get('/api/health', async (req, res) => {
   try {
+    const prisma = getPrisma()
     await prisma.$queryRaw`SELECT 1`
 
     res.json({
@@ -104,13 +90,20 @@ app.use((err, req, res, next) => {
   })
 })
 
-app.listen(PORT, async () => {
-  console.log(`Backend corriendo en puerto ${PORT}`)
+// Para Vercel: exportar la app
+export default app
 
-  try {
-    await prisma.$connect()
-    console.log('Conectado a PostgreSQL')
-  } catch (error) {
-    console.error('Error al conectar con la base de datos:', error.message)
-  }
-})
+// Para desarrollo local: escuchar puerto
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001
+  app.listen(PORT, async () => {
+    console.log(`Backend corriendo en puerto ${PORT}`)
+    try {
+      const prisma = getPrisma()
+      await prisma.$connect()
+      console.log('Conectado a PostgreSQL')
+    } catch (error) {
+      console.error('Error al conectar con la base de datos:', error.message)
+    }
+  })
+}

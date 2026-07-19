@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import bcrypt from 'bcrypt'
-import { prisma } from '../index.js'
+import { getPrisma } from '../db.js'
 import { generarToken, verificarToken } from '../middleware/auth.js'
 import rateLimit from 'express-rate-limit'
 
+const prisma = getPrisma()
 const router = Router()
 
 router.all('/register', (req, res) => {

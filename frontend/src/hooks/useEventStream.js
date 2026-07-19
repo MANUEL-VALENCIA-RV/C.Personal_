@@ -1,78 +1,58 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-
-const API = import.meta.env.VITE_API_URL || '/api'
+import { supabase } from '../db/supabase'
 
 export function useEventStream() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) return
+    const channel = supabase
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Trabajador' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Empresa' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['empresas'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'CampoFormulario' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['campos'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Observacion' }, (payload) => {
+        const trabajadorId = payload.new?.trabajadorId || payload.old?.trabajadorId
+        if (trabajadorId) {
+          queryClient.invalidateQueries({ queryKey: ['trabajador', trabajadorId] })
+          queryClient.invalidateQueries({ queryKey: ['observaciones', trabajadorId] })
+        }
+        queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'CursosTrabajador' }, (payload) => {
+        const trabajadorId = payload.new?.trabajadorId || payload.old?.trabajadorId
+        if (trabajadorId) {
+          queryClient.invalidateQueries({ queryKey: ['trabajador', trabajadorId] })
+          queryClient.invalidateQueries({ queryKey: ['cursos', trabajadorId] })
+        }
+        queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'EventoCalendario' }, (payload) => {
+        const trabajadorId = payload.new?.trabajadorId || payload.old?.trabajadorId
+        if (trabajadorId) {
+          queryClient.invalidateQueries({ queryKey: ['trabajador', trabajadorId] })
+        }
+        queryClient.invalidateQueries({ queryKey: ['calendario'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'DocumentoRequerido' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['configuracion'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'AptitudConfig' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['configuracion'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'SeccionExpediente' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['configuracion'] })
+      })
+      .subscribe()
 
-    const url = `${API}/events?token=${encodeURIComponent(token)}`
-    const source = new EventSource(url)
-
-    source.addEventListener('trabajador:created', () => {
-      queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
-    })
-
-    source.addEventListener('trabajador:updated', (e) => {
-      const data = JSON.parse(e.data)
-      queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
-      if (data.id) queryClient.invalidateQueries({ queryKey: ['trabajador', data.id] })
-    })
-
-    source.addEventListener('trabajador:deleted', () => {
-      queryClient.invalidateQueries({ queryKey: ['trabajadores'] })
-    })
-
-    source.addEventListener('empresa:created', () => {
-      queryClient.invalidateQueries({ queryKey: ['empresas'] })
-    })
-
-    source.addEventListener('empresa:updated', () => {
-      queryClient.invalidateQueries({ queryKey: ['empresas'] })
-    })
-
-    source.addEventListener('empresa:deleted', () => {
-      queryClient.invalidateQueries({ queryKey: ['empresas'] })
-    })
-
-    source.addEventListener('campo:created', () => {
-      queryClient.invalidateQueries({ queryKey: ['campos'] })
-    })
-    source.addEventListener('campo:updated', () => {
-      queryClient.invalidateQueries({ queryKey: ['campos'] })
-    })
-    source.addEventListener('campo:deleted', () => {
-      queryClient.invalidateQueries({ queryKey: ['campos'] })
-    })
-
-
-
-    const refrescarDetalleTrabajador = (e) => {
-      const data = JSON.parse(e.data || '{}')
-      if (data.trabajadorId) {
-        queryClient.invalidateQueries({ queryKey: ['trabajador', data.trabajadorId] })
-        queryClient.invalidateQueries({ queryKey: ['observaciones', data.trabajadorId] })
-        queryClient.invalidateQueries({ queryKey: ['cursos', data.trabajadorId] })
-      }
-      queryClient.invalidateQueries({ queryKey: ['calendario'] })
+    return () => {
+      supabase.removeChannel(channel)
     }
-
-    source.addEventListener('observacion:created', refrescarDetalleTrabajador)
-    source.addEventListener('observacion:updated', refrescarDetalleTrabajador)
-    source.addEventListener('observacion:deleted', refrescarDetalleTrabajador)
-    source.addEventListener('curso:created', refrescarDetalleTrabajador)
-    source.addEventListener('curso:updated', refrescarDetalleTrabajador)
-    source.addEventListener('curso:deleted', refrescarDetalleTrabajador)
-    source.addEventListener('calendario:created', refrescarDetalleTrabajador)
-    source.addEventListener('calendario:updated', refrescarDetalleTrabajador)
-    source.addEventListener('calendario:deleted', refrescarDetalleTrabajador)
-
-    source.onerror = () => {}
-
-    return () => source.close()
   }, [queryClient])
 }

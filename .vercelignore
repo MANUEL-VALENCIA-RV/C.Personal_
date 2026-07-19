@@ -1,0 +1,13 @@
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+frontend/dist/
+backend/temp-uploads/
+backend/documentos_extraidos/
+backend/.idea/
+.backend/credentials-drive.json
+backend/supabase/
+.idea/
+.git/
+*.log
+.vercel/

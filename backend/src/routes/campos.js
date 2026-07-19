@@ -1,6 +1,7 @@
 import { Router } from 'express'
-import { prisma } from '../index.js'
-import { broadcast } from '../services/sse.js'
+import { getPrisma } from '../db.js'
+
+const prisma = getPrisma()
 const router = Router()
 
 router.get('/', async (req, res, next) => {
@@ -19,7 +20,6 @@ router.post('/', async (req, res, next) => {
     const campo = await prisma.campoFormulario.create({
       data: { seccion, nombre, etiqueta: etiqueta || nombre, tipo: tipo || 'text', obligatorio: !!obligatorio, activo: activo !== false, orden: orden ?? 0, opciones: opciones || null }
     })
-    broadcast('campo:created', campo)
     res.status(201).json(campo)
   } catch (error) {
     next(error)
@@ -46,7 +46,6 @@ router.put('/:id', async (req, res, next) => {
         opciones: opciones !== undefined ? opciones : existente.opciones,
       }
     })
-    broadcast('campo:updated', actualizado)
     res.json(actualizado)
   } catch (error) {
     next(error)
@@ -61,7 +60,6 @@ router.put('/reordenar', async (req, res, next) => {
       await prisma.campoFormulario.update({ where: { id: orden[i] }, data: { orden: i } })
     }
     const campos = await prisma.campoFormulario.findMany({ orderBy: [{ seccion: 'asc' }, { orden: 'asc' }] })
-    broadcast('campo:updated', { bulk: true })
     res.json(campos)
   } catch (error) {
     next(error)
@@ -74,7 +72,6 @@ router.delete('/:id', async (req, res, next) => {
     const existente = await prisma.campoFormulario.findUnique({ where: { id } })
     if (!existente) return res.status(404).json({ error: 'Campo no encontrado' })
     await prisma.campoFormulario.delete({ where: { id } })
-    broadcast('campo:deleted', { id })
     res.json({ message: 'Campo eliminado', id })
   } catch (error) {
     next(error)

@@ -1,6 +1,8 @@
 import { Router } from 'express'
-import { prisma } from '../index.js'
-import { broadcast } from '../services/sse.js'
+import { getPrisma } from '../db.js'
+
+const prisma = getPrisma()
+
 
 const router = Router()
 
@@ -80,8 +82,6 @@ router.post('/', async (req, res, next) => {
       }
     })
 
-    broadcast('calendario:created', evento)
-    if (trabajadorId) broadcast('trabajador:updated', { id: trabajadorId })
     res.status(201).json(evento)
   } catch (error) {
     next(error)
@@ -133,8 +133,6 @@ router.put('/:id', async (req, res, next) => {
       }
     })
 
-    broadcast('calendario:updated', actualizado)
-    if (actualizado.trabajadorId) broadcast('trabajador:updated', { id: actualizado.trabajadorId })
     res.json(actualizado)
   } catch (error) {
     next(error)
@@ -155,8 +153,6 @@ router.delete('/:id', async (req, res, next) => {
 
     await prisma.eventoCalendario.delete({ where: { id } })
 
-    broadcast('calendario:deleted', { id, trabajadorId: existente.trabajadorId })
-    if (existente.trabajadorId) broadcast('trabajador:updated', { id: existente.trabajadorId })
     res.json({ message: 'Evento eliminado', id })
   } catch (error) {
     next(error)

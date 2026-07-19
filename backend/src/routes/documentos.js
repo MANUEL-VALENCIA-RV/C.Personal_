@@ -1,9 +1,9 @@
 import express from 'express'
 import multer from 'multer'
-import fs from 'fs'
-import { prisma } from '../index.js'
+import { getPrisma } from '../db.js'
 import { uploadDocumento, deleteDocumento } from '../services/driveService.js'
 
+const prisma = getPrisma()
 const router = express.Router()
 
 // Tipos de archivo permitidos
@@ -20,9 +20,9 @@ const ALLOWED_MIME_TYPES = [
   'text/plain',
 ]
 
-// Configurar multer para archivos temporales
+// Configurar multer para archivos en memoria
 const upload = multer({
-  dest: 'temp-uploads/',
+  storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
   fileFilter: (req, file, cb) => {
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -49,10 +49,6 @@ router.post('/:trabajadorId/upload', upload.single('file'), async (req, res) => 
     })
 
     if (!trabajador) {
-      // Limpiar archivo temporal si el trabajador no existe
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path)
-      }
       return res.status(404).json({ error: 'Trabajador no encontrado' })
     }
 
@@ -80,10 +76,6 @@ router.post('/:trabajadorId/upload', upload.single('file'), async (req, res) => 
     })
   } catch (error) {
     console.error('Error al subir documento:', error)
-    // Limpiar archivo temporal en caso de error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path)
-    }
     res.status(500).json({ error: error.message })
   }
 })

@@ -1,5 +1,4 @@
 import { google } from 'googleapis'
-import fs from 'fs'
 
 const drive = google.drive('v3')
 
@@ -36,7 +35,7 @@ export async function uploadDocumento(file, trabajadorNombre) {
 
     const media = {
       mimeType: file.mimetype,
-      body: fs.createReadStream(file.path),
+      body: file.buffer,
     }
 
     const response = await drive.files.create({
@@ -55,8 +54,6 @@ export async function uploadDocumento(file, trabajadorNombre) {
         type: 'anyone',
       },
     })
-
-    fs.unlinkSync(file.path)
 
     return {
       driveFileId: response.data.id,

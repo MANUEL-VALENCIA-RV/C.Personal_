@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import { prisma } from '../index.js'
+import { getPrisma } from '../db.js'
 import { validarTrabajador } from '../middleware/validacion.js'
-import { broadcast } from '../services/sse.js'
+
+const prisma = getPrisma()
 const router = Router()
 
 const includeEmpresa = {
@@ -112,7 +113,6 @@ router.post('/', validarTrabajador, async (req, res, next) => {
       },
       include: includeEmpresa,
     })
-    broadcast('trabajador:created', serializar(trabajador))
     res.status(201).json(serializar(trabajador))
   } catch (error) {
     next(error)
@@ -164,7 +164,6 @@ router.put('/:id', validarTrabajador, async (req, res, next) => {
       },
       include: includeEmpresa,
     })
-    broadcast('trabajador:updated', serializar(actualizado))
     res.json(serializar(actualizado))
   } catch (error) {
     next(error)
@@ -183,7 +182,6 @@ router.delete('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Trabajador no encontrado' })
     }
     await prisma.trabajador.delete({ where: { id } })
-    broadcast('trabajador:deleted', { id })
     res.json({ message: 'Trabajador eliminado', id })
   } catch (error) {
     next(error)
