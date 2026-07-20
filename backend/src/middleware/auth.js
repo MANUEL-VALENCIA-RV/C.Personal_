@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken'
+import logger from '../logger.js'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '24h'
 
 if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET no definido en variables de entorno.')
-  console.error('Crea un .env basado en .env.example con: openssl rand -base64 48')
+  logger.fatal('JWT_SECRET no definido en variables de entorno')
   process.exit(1)
 }
 

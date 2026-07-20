@@ -2,67 +2,34 @@ import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@controlpersonal.com').split(',')
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@controlpersonal.com').split(',').map(s => s.trim()).filter(Boolean)
 const ADMIN_NOMBRE = process.env.ADMIN_NOMBRE || 'Administrador'
 
-async function main() {
-  if (!ADMIN_PASSWORD) {
-    console.log('ADMIN_PASSWORD no definido en .env. Usando seed de prueba.')
-    console.log('Agrega ADMIN_PASSWORD a .env para personalizar la contraseña del admin.')
-    console.log('Se usará la contraseña por defecto solo para desarrollo.\n')
-  }
 if (!ADMIN_PASSWORD) {
-  throw new Error('ADMIN_PASSWORD no definida en el archivo .env')
+  console.error('FATAL: ADMIN_PASSWORD no definida en .env')
+  process.exit(1)
 }
 
-const password = ADMIN_PASSWORD
-  const hashed = await bcrypt.hash(password, 12)
+async function main() {
+  const hashed = await bcrypt.hash(ADMIN_PASSWORD, 12)
 
   for (const rawEmail of ADMIN_EMAILS) {
-    const email = rawEmail.trim().toLowerCase()
+    const email = rawEmail.toLowerCase()
     const nombre = email === 'admin@controlpersonal.com' ? ADMIN_NOMBRE : email.split('@')[0]
 
     const existe = await prisma.usuario.findUnique({ where: { email } })
     if (!existe) {
-      await prisma.usuario.create({
-        data: { email, password: hashed, nombre, rol: 'admin' }
-      })
+      await prisma.usuario.create({ data: { email, password: hashed, nombre, rol: 'admin' } })
       console.log(`  ✓ ${email}`)
     } else {
       console.log(`  - ${email} ya existe`)
-    }
-  }
-
- const usuariosExtra = [
-  {
-    email: 'usuario.demo@demo.com',
-    nombre: 'Usuario Demo',
-    password: 'Demo123456!'
-  },
-  {
-    email: 'empleado.demo@demo.com',
-    nombre: 'Empleado Demo',
-    password: 'Demo123456!'
-  }
-]
-
-  for (const u of usuariosExtra) {
-    const existe = await prisma.usuario.findUnique({ where: { email: u.email } })
-    if (!existe) {
-      const hashedExtra = await bcrypt.hash(u.password, 12)
-      await prisma.usuario.create({
-        data: { email: u.email, password: hashedExtra, nombre: u.nombre, rol: 'user' }
-      })
-      console.log(`  ✓ ${u.email}`)
-    } else {
-      console.log(`  - ${u.email} ya existe`)
     }
   }
 
@@ -77,8 +44,6 @@ const password = ADMIN_PASSWORD
     if (!existe) {
       await prisma.empresa.create({ data: emp })
       console.log(`  ✓ Empresa: ${emp.nombre}`)
-    } else {
-      console.log(`  - Empresa: ${emp.nombre} ya existe`)
     }
   }
 
@@ -109,13 +74,11 @@ const password = ADMIN_PASSWORD
 
   for (const c of camposDefault) {
     const existe = await prisma.campoFormulario.findUnique({
-      where: { seccion_nombre: { seccion: c.seccion, nombre: c.nombre } }
+      where: { seccion_nombre: { seccion: c.seccion, nombre: c.nombre } },
     })
     if (!existe) {
       await prisma.campoFormulario.create({ data: c })
       console.log(`  ✓ Campo: ${c.seccion}/${c.nombre}`)
-    } else {
-      console.log(`  - Campo: ${c.seccion}/${c.nombre} ya existe`)
     }
   }
 
@@ -136,8 +99,6 @@ const password = ADMIN_PASSWORD
     if (!existe) {
       await prisma.documentoRequerido.create({ data: doc })
       console.log(`  ✓ Documento: ${doc.nombre}`)
-    } else {
-      console.log(`  - Documento: ${doc.nombre} ya existe`)
     }
   }
 
@@ -159,8 +120,6 @@ const password = ADMIN_PASSWORD
     if (!existe) {
       await prisma.aptitudConfig.create({ data: apt })
       console.log(`  ✓ Aptitud: ${apt.nombre}`)
-    } else {
-      console.log(`  - Aptitud: ${apt.nombre} ya existe`)
     }
   }
 
@@ -177,8 +136,6 @@ const password = ADMIN_PASSWORD
     if (!existe) {
       await prisma.seccionExpediente.create({ data: sec })
       console.log(`  ✓ Sección: ${sec.clave}`)
-    } else {
-      console.log(`  - Sección: ${sec.clave} ya existe`)
     }
   }
 
@@ -191,6 +148,4 @@ main()
     console.error(e)
     process.exit(1)
   })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+  .finally(() => prisma.$disconnect())
