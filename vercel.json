@@ -4,6 +4,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://c-personal-1-uukg.onrender.com/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://c-personal-lxwj.onrender.com/api/$1" }
   ]
 }
