@@ -9,7 +9,7 @@ datasource db {
 model Usuario {
   id                  Int       @id @default(autoincrement())
   email               String    @unique
-  password            String
+  password            String?
   nombre              String
   rol                 String    @default("admin")
   intentosFallidos    Int       @default(0)
