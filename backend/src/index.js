@@ -15,7 +15,6 @@ import observacionesRoutes from './routes/observaciones.js'
 import cursosRoutes from './routes/cursos.js'
 import calendarioRoutes from './routes/calendario.js'
 import documentosRoutes from './routes/documentos.js'
-import { googleLogin, googleCallback } from './routes/google.js'
 import { verificarToken } from './middleware/auth.js'
 
 const app = express()
@@ -69,8 +68,6 @@ app.get('/api/health', async (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
-app.get('/api/auth/google', googleLogin)
-app.get('/oauth2callback', googleCallback)
 app.use('/api/empresas', verificarToken, empresasRoutes)
 app.use('/api/campos', verificarToken, camposRoutes)
 app.use('/api/configuracion', verificarToken, configuracionRoutes)
