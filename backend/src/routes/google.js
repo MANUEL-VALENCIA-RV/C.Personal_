@@ -1,10 +1,7 @@
-import { Router } from 'express'
 import { google } from 'googleapis'
 import { getPrisma } from '../db.js'
 import { generarToken } from '../middleware/auth.js'
 import logger from '../logger.js'
-
-const router = Router()
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
@@ -15,10 +12,9 @@ const oauth2Client = CLIENT_ID
   ? new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
   : null
 
-// GET /api/auth/google - Genera URL de autorización
-router.get('/api/auth/google', (req, res) => {
+export function googleLogin(req, res) {
   if (!oauth2Client) {
-    return res.status(500).json({ error: 'Google OAuth no está configurado. Faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en variables de entorno.' })
+    return res.status(500).json({ error: 'Google OAuth no está configurado.' })
   }
 
   const scopes = [
@@ -33,10 +29,9 @@ router.get('/api/auth/google', (req, res) => {
   })
 
   res.json({ url })
-})
+}
 
-// GET /oauth2callback - Callback de Google
-router.get('/oauth2callback', async (req, res, next) => {
+export async function googleCallback(req, res, next) {
   try {
     const { code } = req.query
 
@@ -92,6 +87,4 @@ router.get('/oauth2callback', async (req, res, next) => {
     logger.error({ err: error.message }, 'Error en Google OAuth callback')
     res.redirect(`${CALLBACK_URL}?error=Error+al+autenticar+con+Google`)
   }
-})
-
-export default router
+}
