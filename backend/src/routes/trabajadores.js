@@ -16,7 +16,7 @@ const includeEmpresa = {
 function serializar(t) {
   return {
     ...t,
-    empresa: t.empresaRel?.nombre || t.empresa,
+    empresa: t.empresaRel?.nombre || 'N/A',
     empresaId: t.empresaRel?.id || t.empresaId,
     empresaColor: t.empresaRel?.color || null,
     cursos: t.CursosTrabajador || [],
@@ -92,16 +92,10 @@ router.post('/', validarTrabajador, async (req, res, next) => {
   try {
     const prisma = getPrisma()
     const data = req.body
-    let empresaResolved = data.empresa || 'N/A'
     let empresaIdVal = data.empresaId || null
-    if (empresaIdVal) {
-      const emp = await prisma.empresa.findUnique({ where: { id: empresaIdVal } })
-      if (emp) empresaResolved = emp.nombre
-    }
     const trabajador = await prisma.trabajador.create({
       data: {
         nombre: data.nombre || '',
-        empresa: empresaResolved,
         empresaId: empresaIdVal,
         puesto: data.puesto || 'N/A',
         area: data.area || 'N/A',
@@ -113,7 +107,6 @@ router.post('/', validarTrabajador, async (req, res, next) => {
         datos_completos: data.datos_completos || {},
         aptitudes: data.aptitudes || {},
         resultado_psicometrico: data.resultado_psicometrico || null,
-        documentos: data.documentos || {},
       },
       include: includeEmpresa,
     })
@@ -138,23 +131,11 @@ router.put('/:id', validarTrabajador, async (req, res, next) => {
     }
 
     const data = req.body
-    let empresaResolved = existente.empresa
     let empresaIdVal = data.empresaId !== undefined ? data.empresaId : existente.empresaId
-    if (data.empresaId !== undefined) {
-      if (data.empresaId) {
-        const emp = await prisma.empresa.findUnique({ where: { id: data.empresaId } })
-        if (emp) empresaResolved = emp.nombre
-      } else {
-        empresaResolved = data.empresa || existente.empresa
-      }
-    } else if (data.empresa !== undefined) {
-      empresaResolved = data.empresa
-    }
     const actualizado = await prisma.trabajador.update({
       where: { id },
       data: {
         nombre: data.nombre !== undefined ? data.nombre : existente.nombre,
-        empresa: empresaResolved,
         empresaId: empresaIdVal,
         puesto: data.puesto !== undefined ? data.puesto : existente.puesto,
         area: data.area !== undefined ? data.area : existente.area,
@@ -166,7 +147,6 @@ router.put('/:id', validarTrabajador, async (req, res, next) => {
         datos_completos: data.datos_completos !== undefined ? data.datos_completos : existente.datos_completos,
         aptitudes: data.aptitudes !== undefined ? data.aptitudes : existente.aptitudes,
         resultado_psicometrico: data.resultado_psicometrico !== undefined ? data.resultado_psicometrico : existente.resultado_psicometrico,
-        documentos: data.documentos !== undefined ? data.documentos : existente.documentos,
       },
       include: includeEmpresa,
     })

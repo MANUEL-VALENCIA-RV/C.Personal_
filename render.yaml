@@ -4,7 +4,9 @@ services:
     runtime: node
     region: oregon
     rootDir: backend
-    buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss
+    # build: instala deps, genera el cliente de Prisma y aplica migraciones versionadas.
+    # NOTA: usamos `migrate deploy` (no `db push --accept-data-loss`) para no arriesgar pérdida de datos en producción.
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy
     startCommand: node src/index.js
     healthCheckPath: /api/health
     envVars:
@@ -19,5 +21,9 @@ services:
       - key: PORT
         value: 3001
       - key: CORS_ORIGINS
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_KEY_PATH
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
         sync: false
     autoDeploy: true

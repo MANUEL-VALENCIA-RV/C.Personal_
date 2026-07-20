@@ -48,15 +48,10 @@ export async function uploadDocumento(file, trabajadorNombre) {
       fields: 'id, webViewLink, name, mimeType, createdTime',
     })
 
-    // Hacer el archivo públicamente visible para previsualización
-    await drive.permissions.create({
-      auth,
-      fileId: response.data.id,
-      resource: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    })
+    // NO hacer el archivo público. El acceso se controla vía:
+    // - Service account (backend puede leer/subir/borrar)
+    // - Compartir carpeta/archivo con usuarios específicos de la organización si hace falta
+    // await drive.permissions.create({ ... }) // REMOVIDO: type: 'anyone' exponía PII
 
     return {
       driveFileId: response.data.id,

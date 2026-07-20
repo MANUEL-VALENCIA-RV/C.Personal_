@@ -8,7 +8,7 @@ import { detectarPagina } from './components/pageEditorConfig.js'
 
 import Inicio from './pages/Inicio.jsx'
 import Login from './pages/Login.jsx'
-import CalendarioGeneral from "./pages/calencarioGeneral.jsx";
+import CalendarioGeneral from "./pages/CalendarioGeneral.jsx";
 const Trabajadores = lazy(() => import('./pages/Trabajadores.jsx'))
 const Registro = lazy(() => import('./pages/Registro.jsx'))
 const EditarPersonal = lazy(() => import('./pages/EditarPersonal.jsx'))

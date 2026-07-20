@@ -1,30 +1,46 @@
+# Dependencias
 node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Builds
 dist/
 release/
 build/
-.aider*
+
+# Configuración del editor / IDE
+.idea/
+.vercel/
+
+# Logs
 *.log
+.aider*
+
+# Variables de entorno (NUNCA commitear)
 .env
+backend/.env
+frontend/.env
+
+# OS
 .DS_Store
 Thumbs.db
-backend/node_modules/
-frontend/node_modules/
-backend/.env
-backend/prisma/importar-datos.js
-.vercel
 
-# Google Drive credentials
+# Credenciales de Google Drive (service account, OAuth, etc.)
 credentials-drive.json
 *-credentials.json
 *-service-account.json
+backend/credentials-drive.json
 
-# Temp files
-temp-uploads/
+# Uploads temporales de multer
+backend/temp-uploads/
 
-# Extracted documents
-documentos_extraidos/
+# Documentos extraídos de Drive (pueden contener PII de trabajadores)
+backend/documentos_extraidos/
 
-# Utility scripts with hardcoded secrets
+# Estado local de Supabase
+backend/supabase/
+
+# Scripts auxiliares con secretos hardcodeados (mantener fuera del repo)
 backend/vacuum_db.mjs
 backend/check_size.mjs
 backend/check_docs*.cjs

@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 export const trabajadorSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido').max(200).optional(),
-  empresa: z.string().max(100).optional(),
   empresaId: z.number().int().positive().nullable().optional(),
   puesto: z.string().max(100).optional(),
   area: z.string().max(100).optional(),
@@ -14,7 +13,6 @@ export const trabajadorSchema = z.object({
   datos_completos: z.record(z.any()).optional(),
   aptitudes: z.record(z.any()).optional(),
   resultado_psicometrico: z.any().nullable().optional(),
-  documentos: z.record(z.any()).optional(),
 })
 
 export function validarTrabajador(req, res, next) {

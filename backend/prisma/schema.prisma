@@ -23,7 +23,6 @@ model Usuario {
 model Trabajador {
   id                     Int                @id @default(autoincrement())
   nombre                 String
-  empresa                String             @default("N/A")
   puesto                 String
   area                   String
   telefono               String             @default("N/A")
@@ -34,7 +33,6 @@ model Trabajador {
   datos_completos        Json               @default("{}")
   aptitudes              Json               @default("{}")
   resultado_psicometrico Json?
-  documentos             Json               @default("{}")
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   empresaId              Int?
@@ -43,12 +41,10 @@ model Trabajador {
   observaciones          Observacion[]
   empresaRel             Empresa?           @relation(fields: [empresaId], references: [id])
 
-  driveFolderId          String?         
+  driveFolderId          String?
 
-  
   Documentos             Documento[]
 }
-
 
 model Documento {
   id           Int       @id @default(autoincrement())
