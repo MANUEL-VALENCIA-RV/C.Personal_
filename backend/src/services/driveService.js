@@ -1,20 +1,23 @@
 import { google } from 'googleapis'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const drive = google.drive('v3')
 
 async function authenticate() {
-  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID
-  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
-  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+  const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || join(__dirname, '../../credentials-drive.json')
+  const keyFile = JSON.parse(readFileSync(keyPath, 'utf8'))
 
-  if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error('Faltan credenciales OAuth2 en .env (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN)')
-  }
+  const auth = new google.auth.GoogleAuth({
+    credentials: keyFile,
+    scopes: ['https://www.googleapis.com/auth/drive'],
+  })
 
-  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret)
-  oauth2Client.setCredentials({ refresh_token: refreshToken })
-
-  return oauth2Client
+  return auth
 }
 
 export async function uploadDocumento(file, trabajadorNombre) {
