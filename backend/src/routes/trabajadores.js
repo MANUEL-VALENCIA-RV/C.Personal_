@@ -1,8 +1,9 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { getPrisma } from '../db.js'
 import { validarTrabajador } from '../middleware/validacion.js'
+import logger from '../logger.js'
 
-const prisma = getPrisma()
 const router = Router()
 
 const includeEmpresa = {
@@ -26,6 +27,7 @@ function serializar(t) {
 
 router.get('/', async (req, res, next) => {
   try {
+    const prisma = getPrisma()
     const { q, estado, page: pageStr, limit: limitStr } = req.query
     const page = Math.max(1, parseInt(pageStr) || 1)
     const limit = Math.min(100, Math.max(1, parseInt(limitStr) || 20))
@@ -51,7 +53,7 @@ router.get('/', async (req, res, next) => {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: includeEmpresa,
-      })
+      }),
     ])
 
     res.json({
@@ -59,7 +61,7 @@ router.get('/', async (req, res, next) => {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
     next(error)
@@ -68,6 +70,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:id', async (req, res, next) => {
   try {
+    const prisma = getPrisma()
     const id = parseInt(req.params.id)
     if (isNaN(id)) {
       return res.status(400).json({ error: 'ID inválido.' })
@@ -87,6 +90,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', validarTrabajador, async (req, res, next) => {
   try {
+    const prisma = getPrisma()
     const data = req.body
     let empresaResolved = data.empresa || 'N/A'
     let empresaIdVal = data.empresaId || null
@@ -109,10 +113,11 @@ router.post('/', validarTrabajador, async (req, res, next) => {
         datos_completos: data.datos_completos || {},
         aptitudes: data.aptitudes || {},
         resultado_psicometrico: data.resultado_psicometrico || null,
-        documentos: data.documentos || {}
+        documentos: data.documentos || {},
       },
       include: includeEmpresa,
     })
+    logger.info({ trabajadorId: trabajador.id }, 'Trabajador creado')
     res.status(201).json(serializar(trabajador))
   } catch (error) {
     next(error)
@@ -121,6 +126,7 @@ router.post('/', validarTrabajador, async (req, res, next) => {
 
 router.put('/:id', validarTrabajador, async (req, res, next) => {
   try {
+    const prisma = getPrisma()
     const id = parseInt(req.params.id)
     if (isNaN(id)) {
       return res.status(400).json({ error: 'ID inválido.' })
@@ -160,10 +166,11 @@ router.put('/:id', validarTrabajador, async (req, res, next) => {
         datos_completos: data.datos_completos !== undefined ? data.datos_completos : existente.datos_completos,
         aptitudes: data.aptitudes !== undefined ? data.aptitudes : existente.aptitudes,
         resultado_psicometrico: data.resultado_psicometrico !== undefined ? data.resultado_psicometrico : existente.resultado_psicometrico,
-        documentos: data.documentos !== undefined ? data.documentos : existente.documentos
+        documentos: data.documentos !== undefined ? data.documentos : existente.documentos,
       },
       include: includeEmpresa,
     })
+    logger.info({ trabajadorId: id }, 'Trabajador actualizado')
     res.json(serializar(actualizado))
   } catch (error) {
     next(error)
@@ -172,6 +179,7 @@ router.put('/:id', validarTrabajador, async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
+    const prisma = getPrisma()
     const id = parseInt(req.params.id)
     if (isNaN(id)) {
       return res.status(400).json({ error: 'ID inválido.' })
@@ -182,6 +190,7 @@ router.delete('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Trabajador no encontrado' })
     }
     await prisma.trabajador.delete({ where: { id } })
+    logger.info({ trabajadorId: id }, 'Trabajador eliminado')
     res.json({ message: 'Trabajador eliminado', id })
   } catch (error) {
     next(error)

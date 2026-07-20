@@ -1,8 +1,6 @@
-import prismaPkg from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
-
-const { PrismaClient } = prismaPkg
 
 let prismaInstance = null
 
@@ -18,4 +16,14 @@ export function getPrisma() {
     prismaInstance = new PrismaClient({ adapter })
   }
   return prismaInstance
+}
+
+export async function checkDatabase() {
+  try {
+    const prisma = getPrisma()
+    await prisma.$queryRaw`SELECT 1`
+    return { connected: true }
+  } catch (error) {
+    return { connected: false, error: error.message }
+  }
 }

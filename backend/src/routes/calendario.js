@@ -1,35 +1,34 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { getPrisma } from '../db.js'
-
-const prisma = getPrisma()
-
+import logger from '../logger.js'
 
 const router = Router()
 
-function obtenerId(value) {
-  const id = parseInt(value)
-  return Number.isNaN(id) ? null : id
-}
+const createSchema = z.object({
+  trabajadorId: z.number().int().positive().nullable().optional(),
+  titulo: z.string().min(1, 'Título requerido').max(200),
+  descripcion: z.string().max(2000).nullable().optional(),
+  fecha: z.string().min(1, 'Fecha requerida'),
+  tipo: z.string().max(50).optional(),
+})
 
-function obtenerFechaObligatoria(value) {
-  if (!value) return null
-  const fecha = new Date(value)
-  return Number.isNaN(fecha.getTime()) ? null : fecha
-}
-
-async function existeTrabajador(trabajadorId) {
-  if (!trabajadorId) return true
-  const trabajador = await prisma.trabajador.findUnique({ where: { id: trabajadorId } })
-  return !!trabajador
-}
+const updateSchema = z.object({
+  trabajadorId: z.number().int().positive().nullable().optional(),
+  titulo: z.string().min(1).max(200).optional(),
+  descripcion: z.string().max(2000).nullable().optional(),
+  fecha: z.string().optional(),
+  tipo: z.string().max(50).optional(),
+})
 
 router.get('/', async (req, res, next) => {
   try {
-    const trabajadorId = req.query.trabajadorId ? obtenerId(req.query.trabajadorId) : null
+    const prisma = getPrisma()
+    const trabajadorId = req.query.trabajadorId ? parseInt(req.query.trabajadorId) : null
     const desde = req.query.desde ? new Date(req.query.desde) : null
     const hasta = req.query.hasta ? new Date(req.query.hasta) : null
 
-    if (req.query.trabajadorId && !trabajadorId) {
+    if (req.query.trabajadorId && (trabajadorId === null || isNaN(trabajadorId))) {
       return res.status(400).json({ error: 'trabajadorId inválido.' })
     }
 
@@ -37,18 +36,15 @@ router.get('/', async (req, res, next) => {
     if (trabajadorId) where.trabajadorId = trabajadorId
     if (desde || hasta) {
       where.fecha = {}
-      if (desde && !Number.isNaN(desde.getTime())) where.fecha.gte = desde
-      if (hasta && !Number.isNaN(hasta.getTime())) where.fecha.lte = hasta
+      if (desde && !isNaN(desde.getTime())) where.fecha.gte = desde
+      if (hasta && !isNaN(hasta.getTime())) where.fecha.lte = hasta
     }
 
     const eventos = await prisma.eventoCalendario.findMany({
       where,
       orderBy: { fecha: 'asc' },
-      include: {
-        trabajador: { select: { id: true, nombre: true } }
-      }
+      include: { trabajador: { select: { id: true, nombre: true } } },
     })
-
     res.json(eventos)
   } catch (error) {
     next(error)
@@ -57,31 +53,32 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const trabajadorId = req.body.trabajadorId ? obtenerId(req.body.trabajadorId) : null
-    const titulo = String(req.body.titulo || '').trim()
-    const descripcion = req.body.descripcion ? String(req.body.descripcion).trim() : null
-    const fecha = obtenerFechaObligatoria(req.body.fecha)
-    const tipo = String(req.body.tipo || 'general').trim() || 'general'
-
-    if (!titulo) {
-      return res.status(400).json({ error: 'Título requerido.' })
+    const prisma = getPrisma()
+    const parsed = createSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Datos inválidos', detalles: parsed.error.flatten().fieldErrors })
     }
 
-    if (!fecha) {
-      return res.status(400).json({ error: 'Fecha inválida o requerida.' })
-    }
+    const { trabajadorId, titulo, descripcion, fecha, tipo } = parsed.data
+    const fechaVal = new Date(fecha)
+    if (isNaN(fechaVal.getTime())) return res.status(400).json({ error: 'Fecha inválida.' })
 
-    if (!(await existeTrabajador(trabajadorId))) {
-      return res.status(404).json({ error: 'Trabajador no encontrado.' })
+    if (trabajadorId) {
+      const trabajador = await prisma.trabajador.findUnique({ where: { id: trabajadorId } })
+      if (!trabajador) return res.status(404).json({ error: 'Trabajador no encontrado.' })
     }
 
     const evento = await prisma.eventoCalendario.create({
-      data: { trabajadorId, titulo, descripcion, fecha, tipo },
-      include: {
-        trabajador: { select: { id: true, nombre: true } }
-      }
+      data: {
+        trabajadorId: trabajadorId || null,
+        titulo,
+        descripcion: descripcion || null,
+        fecha: fechaVal,
+        tipo: tipo || 'general',
+      },
+      include: { trabajador: { select: { id: true, nombre: true } } },
     })
-
+    logger.info({ eventoId: evento.id }, 'Evento creado')
     res.status(201).json(evento)
   } catch (error) {
     next(error)
@@ -90,49 +87,36 @@ router.post('/', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const id = obtenerId(req.params.id)
-    if (!id) {
-      return res.status(400).json({ error: 'ID inválido.' })
-    }
+    const prisma = getPrisma()
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido.' })
 
     const existente = await prisma.eventoCalendario.findUnique({ where: { id } })
-    if (!existente) {
-      return res.status(404).json({ error: 'Evento no encontrado.' })
+    if (!existente) return res.status(404).json({ error: 'Evento no encontrado.' })
+
+    const parsed = updateSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Datos inválidos', detalles: parsed.error.flatten().fieldErrors })
     }
 
-    const trabajadorId = req.body.trabajadorId !== undefined
-      ? (req.body.trabajadorId ? obtenerId(req.body.trabajadorId) : null)
-      : existente.trabajadorId
+    const { trabajadorId, titulo, descripcion, fecha, tipo } = parsed.data
+    const fechaVal = fecha !== undefined ? new Date(fecha) : existente.fecha
 
-    const titulo = req.body.titulo !== undefined ? String(req.body.titulo).trim() : existente.titulo
-    const fecha = req.body.fecha !== undefined ? obtenerFechaObligatoria(req.body.fecha) : existente.fecha
-
-    if (!titulo) {
-      return res.status(400).json({ error: 'Título requerido.' })
-    }
-
-    if (!fecha) {
-      return res.status(400).json({ error: 'Fecha inválida o requerida.' })
-    }
-
-    if (!(await existeTrabajador(trabajadorId))) {
-      return res.status(404).json({ error: 'Trabajador no encontrado.' })
+    if (fecha !== undefined && isNaN(fechaVal.getTime())) {
+      return res.status(400).json({ error: 'Fecha inválida.' })
     }
 
     const actualizado = await prisma.eventoCalendario.update({
       where: { id },
       data: {
-        trabajadorId,
-        titulo,
-        descripcion: req.body.descripcion !== undefined ? (req.body.descripcion ? String(req.body.descripcion).trim() : null) : existente.descripcion,
-        fecha,
-        tipo: req.body.tipo !== undefined ? String(req.body.tipo || 'general').trim() || 'general' : existente.tipo,
+        trabajadorId: trabajadorId !== undefined ? trabajadorId : existente.trabajadorId,
+        titulo: titulo !== undefined ? titulo : existente.titulo,
+        descripcion: descripcion !== undefined ? descripcion : existente.descripcion,
+        fecha: fechaVal,
+        tipo: tipo !== undefined ? tipo : existente.tipo,
       },
-      include: {
-        trabajador: { select: { id: true, nombre: true } }
-      }
+      include: { trabajador: { select: { id: true, nombre: true } } },
     })
-
     res.json(actualizado)
   } catch (error) {
     next(error)
@@ -141,18 +125,14 @@ router.put('/:id', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const id = obtenerId(req.params.id)
-    if (!id) {
-      return res.status(400).json({ error: 'ID inválido.' })
-    }
+    const prisma = getPrisma()
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido.' })
 
     const existente = await prisma.eventoCalendario.findUnique({ where: { id } })
-    if (!existente) {
-      return res.status(404).json({ error: 'Evento no encontrado.' })
-    }
+    if (!existente) return res.status(404).json({ error: 'Evento no encontrado.' })
 
     await prisma.eventoCalendario.delete({ where: { id } })
-
     res.json({ message: 'Evento eliminado', id })
   } catch (error) {
     next(error)

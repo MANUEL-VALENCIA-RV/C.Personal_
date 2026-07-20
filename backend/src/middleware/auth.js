@@ -1,15 +1,15 @@
 import jwt from 'jsonwebtoken'
+import logger from '../logger.js'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '24h'
 
-if (!JWT_SECRET && process.env.NODE_ENV !== 'production') {
-  console.error('FATAL: JWT_SECRET no definido en variables de entorno.')
-  console.error('Crea un .env basado en .env.example con: openssl rand -base64 48')
+if (!JWT_SECRET) {
+  logger.fatal('JWT_SECRET no definido en variables de entorno')
+  process.exit(1)
 }
 
 export function generarToken(usuario) {
-  if (!JWT_SECRET) throw new Error('JWT_SECRET no está configurado')
   return jwt.sign(
     { id: usuario.id, email: usuario.email, rol: usuario.rol },
     JWT_SECRET,
@@ -18,9 +18,6 @@ export function generarToken(usuario) {
 }
 
 export function verificarToken(req, res, next) {
-  if (!JWT_SECRET) {
-    return res.status(500).json({ error: 'JWT_SECRET no está configurado en el servidor.' })
-  }
   const header = req.headers.authorization
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Acceso denegado. Token requerido.' })
