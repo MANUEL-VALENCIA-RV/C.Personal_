@@ -5,7 +5,7 @@ import PrivateRoute from './components/PrivateRoute.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 import PageEditor, { EditarBtn } from './components/PageEditor.jsx'
 import { detectarPagina } from './components/pageEditorConfig.js'
-import { useEventStream } from './hooks/useEventStream.js'
+
 import Inicio from './pages/Inicio.jsx'
 import Login from './pages/Login.jsx'
 import CalendarioGeneral from "./pages/calencarioGeneral.jsx";
@@ -34,7 +34,6 @@ function SuspenseFallback() {
 }
 
 function AppLayout() {
-  useEventStream()
   const location = useLocation()
   const [showEditor, setShowEditor] = useState(false)
   const config = detectarPagina(location.pathname)
