@@ -11,10 +11,16 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
 const CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL
 
-const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
+const oauth2Client = CLIENT_ID
+  ? new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
+  : null
 
 // GET /api/auth/google - Genera URL de autorización
 router.get('/api/auth/google', (req, res) => {
+  if (!oauth2Client) {
+    return res.status(500).json({ error: 'Google OAuth no está configurado. Faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en variables de entorno.' })
+  }
+
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
