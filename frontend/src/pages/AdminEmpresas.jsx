@@ -1,25 +1,16 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEmpresas } from '../hooks/useEmpresas.js'
+import { API, getToken, handleResponse } from '../db/api.js'
 import { Plus, Pencil, Trash2, X, AlertTriangle, EyeOff, Eye } from 'lucide-react'
 import './AdminEmpresas.css'
-
-const API = import.meta.env.VITE_API_URL || '/api'
-
-function getToken() {
-  return localStorage.getItem('auth_token')
-}
 
 async function api(path, options = {}) {
   const res = await fetch(`${API}${path}`, {
     headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json', ...options.headers },
     ...options,
   })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || 'Error en la solicitud')
-  }
-  return res.json()
+  return handleResponse(res)
 }
 
 const colores = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']

@@ -1,17 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-
-const API = import.meta.env.VITE_API_URL || '/api'
-
-function getToken() {
-  return localStorage.getItem('auth_token')
-}
+import { API, getToken, handleResponse } from '../db/api.js'
 
 async function obtenerEmpresas() {
   const res = await fetch(`${API}/empresas`, {
     headers: { 'Authorization': `Bearer ${getToken()}` }
   })
-  if (!res.ok) throw new Error('Error al cargar empresas')
-  const data = await res.json()
+  const data = await handleResponse(res)
   return data.map(e => ({
     id: e.id,
     label: e.nombre,

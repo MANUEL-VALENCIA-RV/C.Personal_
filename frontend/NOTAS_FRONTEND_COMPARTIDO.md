@@ -18,10 +18,12 @@ También se activó `useEventStream()` en `App.jsx` para que otros navegadores i
 
 ## Importante
 
-Para que funcione con el backend en local, usa un `.env` en frontend con:
+Para desarrollo local no se necesita archivo `.env` — el proxy de Vite redirige `/api` al backend en `localhost:3001` automáticamente.
+
+Si necesitas apuntar a un backend externo, usa un `.env` en frontend con:
 
 ```env
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=/api
 ```
 
 Luego ejecuta:

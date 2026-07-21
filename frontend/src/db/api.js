@@ -1,6 +1,6 @@
-const API = import.meta.env.VITE_API_URL || '/api'
+export const API = import.meta.env.VITE_API_URL || '/api'
 
-function getToken() {
+export function getToken() {
   return localStorage.getItem('auth_token')
 }
 
@@ -11,7 +11,7 @@ function authHeaders() {
       : { 'Content-Type': 'application/json' }
 }
 
-async function handleResponse(res) {
+export async function handleResponse(res) {
   if (res.status === 401) {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_usuario')
