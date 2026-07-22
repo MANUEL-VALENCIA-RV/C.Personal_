@@ -7,7 +7,6 @@ import { uploadDocumento, deleteDocumento } from '../services/driveService.js'
 const prisma = getPrisma()
 const router = express.Router()
 
-// Tipos de archivo permitidos
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -21,10 +20,9 @@ const ALLOWED_MIME_TYPES = [
   'text/plain',
 ]
 
-// Configurar multer para archivos en memoria
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true)
@@ -34,99 +32,7 @@ const upload = multer({
   },
 })
 
-// POST - Subir documento para un trabajador
-router.post('/:trabajadorId/upload', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se proporcionó archivo' })
-    }
-
-    const { trabajadorId } = req.params
-    const campo = req.body.campo || req.file.originalname
-
-    // Validar que el trabajador existe
-    const trabajador = await prisma.trabajador.findUnique({
-      where: { id: parseInt(trabajadorId) },
-    })
-
-    if (!trabajador) {
-      return res.status(404).json({ error: 'Trabajador no encontrado' })
-    }
-
-    // Subir a Google Drive
-    const { driveFileId, webViewLink, carpetaId, nombre } = await uploadDocumento(
-      req.file,
-      `${trabajador.nombre}_${trabajadorId}`
-    )
-
-    // Guardar referencia en BD usando el campo como nombre
-    const documento = await prisma.documento.create({
-      data: {
-        trabajadorId: parseInt(trabajadorId),
-        driveFileId,
-        nombre: campo,
-        mimeType: req.file.mimetype,
-        carpetaId,
-      },
-    })
-
-    res.json({
-      success: true,
-      documento,
-      webViewLink,
-    })
-  } catch (error) {
-    console.error('Error al subir documento:', error)
-    res.status(500).json({ error: error.message })
-  }
-})
-
-// GET - Obtener documentos de un trabajador
-router.get('/:trabajadorId', async (req, res) => {
-  try {
-    const { trabajadorId } = req.params
-
-    const documentos = await prisma.documento.findMany({
-      where: { trabajadorId: parseInt(trabajadorId) },
-      orderBy: { creadoAt: 'desc' },
-    })
-
-    res.json({ documentos })
-  } catch (error) {
-    console.error('Error al obtener documentos:', error)
-    res.status(500).json({ error: error.message })
-  }
-})
-
-// DELETE - Eliminar documento
-router.delete('/:documentoId', async (req, res) => {
-  try {
-    const { documentoId } = req.params
-
-    const documento = await prisma.documento.findUnique({
-      where: { id: parseInt(documentoId) },
-    })
-
-    if (!documento) {
-      return res.status(404).json({ error: 'Documento no encontrado' })
-    }
-
-    // Eliminar de Google Drive
-    await deleteDocumento(documento.driveFileId)
-
-    // Eliminar de BD
-    await prisma.documento.delete({
-      where: { id: parseInt(documentoId) },
-    })
-
-    res.json({ success: true, mensaje: 'Documento eliminado' })
-  } catch (error) {
-    console.error('Error al eliminar documento:', error)
-    res.status(500).json({ error: error.message })
-  }
-})
-
-// GET - Proxy para servir archivos desde Google Drive
+// GET - Proxy para servir archivos desde Google Drive (ANTES de /:trabajadorId)
 router.get('/file/:driveFileId', async (req, res) => {
   try {
     const { driveFileId } = req.params
@@ -164,6 +70,89 @@ router.get('/file/:driveFileId', async (req, res) => {
   } catch (error) {
     console.error('Error proxying file:', error)
     res.status(500).json({ error: 'Error al obtener archivo de Drive' })
+  }
+})
+
+// POST - Subir documento para un trabajador
+router.post('/:trabajadorId/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se proporcionó archivo' })
+    }
+
+    const { trabajadorId } = req.params
+    const campo = req.body.campo || req.file.originalname
+
+    const trabajador = await prisma.trabajador.findUnique({
+      where: { id: parseInt(trabajadorId) },
+    })
+
+    if (!trabajador) {
+      return res.status(404).json({ error: 'Trabajador no encontrado' })
+    }
+
+    const { driveFileId, webViewLink, carpetaId, nombre } = await uploadDocumento(
+      req.file,
+      `${trabajador.nombre}_${trabajadorId}`
+    )
+
+    const documento = await prisma.documento.create({
+      data: {
+        trabajadorId: parseInt(trabajadorId),
+        driveFileId,
+        nombre: campo,
+        mimeType: req.file.mimetype,
+        carpetaId,
+      },
+    })
+
+    res.json({ success: true, documento, webViewLink })
+  } catch (error) {
+    console.error('Error al subir documento:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET - Obtener documentos de un trabajador
+router.get('/:trabajadorId', async (req, res) => {
+  try {
+    const { trabajadorId } = req.params
+
+    const documentos = await prisma.documento.findMany({
+      where: { trabajadorId: parseInt(trabajadorId) },
+      orderBy: { creadoAt: 'desc' },
+    })
+
+    res.json({ documentos })
+  } catch (error) {
+    console.error('Error al obtener documentos:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// DELETE - Eliminar documento
+router.delete('/:documentoId', async (req, res) => {
+  try {
+    const { documentoId } = req.params
+
+    const documento = await prisma.documento.findUnique({
+      where: { id: parseInt(documentoId) },
+    })
+
+    if (!documento) {
+      return res.status(404).json({ error: 'Documento no encontrado' })
+    }
+
+    await deleteDocumento(documento.driveFileId)
+
+    await prisma.documento.delete({
+      where: { id: parseInt(documentoId) },
+    })
+
+    res.json({ success: true, mensaje: 'Documento eliminado' })
+  } catch (error) {
+    console.error('Error al eliminar documento:', error)
+    res.status(500).json({ error: error.message })
   }
 })
 
