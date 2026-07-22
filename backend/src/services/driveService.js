@@ -11,12 +11,20 @@ const drive = google.drive('v3')
 async function authenticate() {
   let credentials
 
-  if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-    credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
-  } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
-    credentials = JSON.parse(readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH, 'utf8'))
+  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+  const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH
+
+  if (keyJson) {
+    try {
+      credentials = JSON.parse(keyJson)
+    } catch (e) {
+      console.error('GOOGLE_SERVICE_ACCOUNT_KEY no es JSON válido:', e.message)
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY contains invalid JSON')
+    }
+  } else if (keyPath) {
+    credentials = JSON.parse(readFileSync(keyPath, 'utf8'))
   } else {
-    credentials = JSON.parse(readFileSync(join(__dirname, '../../credentials-drive.json'), 'utf8'))
+    throw new Error('No se encontró GOOGLE_SERVICE_ACCOUNT_KEY ni GOOGLE_SERVICE_ACCOUNT_KEY_PATH en las variables de entorno')
   }
 
   const auth = new google.auth.GoogleAuth({
