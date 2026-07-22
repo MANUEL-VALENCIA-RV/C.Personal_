@@ -34,7 +34,11 @@ export const login = async (email, password) => {
     body: JSON.stringify({ email, password }),
   })
 
-  const data = await handleResponse(res)
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al iniciar sesión')
+  }
 
   localStorage.setItem('auth_token', data.token)
 
