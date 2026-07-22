@@ -3,6 +3,8 @@ import { Readable } from 'stream'
 
 const drive = google.drive('v3')
 
+const DRIVE_OPTS = { supportsAllDrives: true, includeItemsFromAllDrives: true }
+
 async function authenticate() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL
@@ -33,7 +35,11 @@ async function authenticate() {
 export async function uploadDocumento(file, trabajadorNombre) {
   try {
     const auth = await authenticate()
-    const parentFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || 'root'
+    const parentFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+
+    if (!parentFolderId) {
+      throw new Error('GOOGLE_DRIVE_FOLDER_ID no está configurado en variables de entorno')
+    }
 
     const carpetaId = await getOrCreateFolder(
       auth,
@@ -56,12 +62,8 @@ export async function uploadDocumento(file, trabajadorNombre) {
       resource: fileMetadata,
       media,
       fields: 'id, webViewLink, name, mimeType, createdTime',
+      ...DRIVE_OPTS,
     })
-
-    // NO hacer el archivo público. El acceso se controla vía:
-    // - Service account (backend puede leer/subir/borrar)
-    // - Compartir carpeta/archivo con usuarios específicos de la organización si hace falta
-    // await drive.permissions.create({ ... }) // REMOVIDO: type: 'anyone' exponía PII
 
     return {
       driveFileId: response.data.id,
@@ -77,7 +79,6 @@ export async function uploadDocumento(file, trabajadorNombre) {
 
 async function getOrCreateFolder(auth, folderName, parentId) {
   try {
-    // Sanitizar nombre de carpeta para evitar inyección en Drive query
     const safeName = folderName.replace(/['\\]/g, '')
     const response = await drive.files.list({
       auth,
@@ -85,6 +86,7 @@ async function getOrCreateFolder(auth, folderName, parentId) {
       spaces: 'drive',
       pageSize: 1,
       fields: 'files(id)',
+      ...DRIVE_OPTS,
     })
 
     if (response.data.files && response.data.files.length > 0) {
@@ -101,6 +103,7 @@ async function getOrCreateFolder(auth, folderName, parentId) {
       auth,
       resource: folderMetadata,
       fields: 'id',
+      ...DRIVE_OPTS,
     })
 
     return created.data.id
@@ -116,6 +119,7 @@ export async function deleteDocumento(fileId) {
     await drive.files.delete({
       auth,
       fileId,
+      ...DRIVE_OPTS,
     })
   } catch (error) {
     console.error('Error en deleteDocumento:', error)
@@ -130,6 +134,7 @@ export async function getDocumentoLink(fileId) {
       auth,
       fileId,
       fields: 'webViewLink, downloadUrl',
+      ...DRIVE_OPTS,
     })
 
     return response.data
