@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import { Readable } from 'stream'
 
 const drive = google.drive('v3')
 
@@ -47,7 +48,7 @@ export async function uploadDocumento(file, trabajadorNombre) {
 
     const media = {
       mimeType: file.mimetype,
-      body: file.buffer,
+      body: Readable.from(file.buffer),
     }
 
     const response = await drive.files.create({
