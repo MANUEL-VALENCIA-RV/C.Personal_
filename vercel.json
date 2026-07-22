@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://c-personal-lxwj.onrender.com/api/$1" }
-  ]
-}
