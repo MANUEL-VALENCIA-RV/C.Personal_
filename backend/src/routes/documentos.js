@@ -1,5 +1,6 @@
 import express from 'express'
 import multer from 'multer'
+import { google } from 'googleapis'
 import { getPrisma } from '../db.js'
 import { uploadDocumento, deleteDocumento } from '../services/driveService.js'
 
@@ -122,6 +123,47 @@ router.delete('/:documentoId', async (req, res) => {
   } catch (error) {
     console.error('Error al eliminar documento:', error)
     res.status(500).json({ error: error.message })
+  }
+})
+
+// GET - Proxy para servir archivos desde Google Drive
+router.get('/file/:driveFileId', async (req, res) => {
+  try {
+    const { driveFileId } = req.params
+
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN
+
+    if (!clientId || !clientSecret || !refreshToken) {
+      return res.status(500).json({ error: 'Google Drive no configurado' })
+    }
+
+    const oauth2 = new google.auth.OAuth2(clientId, clientSecret)
+    oauth2.setCredentials({ refresh_token: refreshToken })
+
+    const drive = google.drive('v3')
+
+    const fileMeta = await drive.files.get({
+      auth: oauth2,
+      fileId: driveFileId,
+      fields: 'name, mimeType',
+      supportsAllDrives: true,
+    })
+
+    const response = await drive.files.get({
+      auth: oauth2,
+      fileId: driveFileId,
+      alt: 'media',
+      supportsAllDrives: true,
+    })
+
+    res.setHeader('Content-Type', fileMeta.data.mimeType || 'application/octet-stream')
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    response.data.pipe(res)
+  } catch (error) {
+    console.error('Error proxying file:', error)
+    res.status(500).json({ error: 'Error al obtener archivo de Drive' })
   }
 })
 

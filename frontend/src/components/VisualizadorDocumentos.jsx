@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileText, Image as ImageIcon, File, Eye, Trash2, X, Download } from 'lucide-react'
+import { getToken } from '../db/api.js'
 
 function IconoArchivo({ mime }) {
   if (mime?.startsWith('image/')) return <ImageIcon size={22} />
@@ -7,20 +8,44 @@ function IconoArchivo({ mime }) {
   return <File size={22} />
 }
 
-function getPreviewUrl(driveFileId, mimeType) {
-  if (mimeType?.startsWith('image/')) {
-    return `https://drive.google.com/uc?export=view&id=${driveFileId}`
-  }
-  if (mimeType === 'application/pdf') {
-    return `https://drive.google.com/file/d/${driveFileId}/preview`
-  }
-  return null
+function getProxyUrl(driveFileId) {
+  const base = `${import.meta.env.VITE_API_URL || '/api'}/documentos/file`
+  return `${base}/${driveFileId}`
 }
 
 function ModalPreview({ doc, onClose }) {
-  const previewUrl = getPreviewUrl(doc.driveFileId, doc.mimeType)
+  const [blobUrl, setBlobUrl] = useState(null)
+  const [loading, setLoading] = useState(true)
   const isImage = doc.mimeType?.startsWith('image/')
   const isPdf = doc.mimeType === 'application/pdf'
+  const proxyUrl = getProxyUrl(doc.driveFileId)
+
+  useEffect(() => {
+    let cancelled = false
+    const url = getProxyUrl(doc.driveFileId)
+
+    fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(res => res.blob())
+      .then(blob => {
+        if (!cancelled) {
+          setBlobUrl(URL.createObjectURL(blob))
+          setLoading(false)
+        }
+      })
+      .catch(() => setLoading(false))
+
+    return () => { cancelled = true; if (blobUrl) URL.revokeObjectURL(blobUrl) }
+  }, [doc.driveFileId])
+
+  const handleDownload = async () => {
+    const res = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${getToken()}` } })
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = doc.nombre || 'archivo'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   return (
     <div className="vis-modal-overlay" onClick={onClose}>
@@ -28,39 +53,35 @@ function ModalPreview({ doc, onClose }) {
         <div className="vis-modal-header">
           <span className="vis-modal-title">{doc.nombre}</span>
           <div className="vis-modal-actions">
-            <a
-              href={`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="vis-modal-btn"
-              title="Descargar"
-            >
+            <button type="button" className="vis-modal-btn" onClick={handleDownload} title="Descargar">
               <Download size={16} /> Descargar
-            </a>
+            </button>
             <button type="button" className="vis-modal-close" onClick={onClose}>
               <X size={20} />
             </button>
           </div>
         </div>
         <div className="vis-modal-body">
-          {isImage && previewUrl && (
-            <img src={previewUrl} alt={doc.nombre} className="vis-modal-image" />
+          {loading && <p style={{ color: 'var(--text-muted)' }}>Cargando...</p>}
+          {!loading && isImage && blobUrl && (
+            <img src={blobUrl} alt={doc.nombre} className="vis-modal-image" />
           )}
-          {isPdf && previewUrl && (
-            <iframe src={previewUrl} className="vis-modal-iframe" title={doc.nombre} />
+          {!loading && isPdf && blobUrl && (
+            <iframe src={blobUrl} className="vis-modal-iframe" title={doc.nombre} />
           )}
-          {!isImage && !isPdf && (
+          {!loading && !isImage && !isPdf && (
             <div className="vis-modal-no-preview">
               <File size={48} />
               <p>Vista previa no disponible para este tipo de archivo.</p>
-              <a
-                href={`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="vis-modal-btn vis-modal-btn-primary"
-              >
+              <button type="button" className="vis-modal-btn vis-modal-btn-primary" onClick={handleDownload}>
                 <Download size={16} /> Descargar archivo
-              </a>
+              </button>
+            </div>
+          )}
+          {!loading && !blobUrl && (
+            <div className="vis-modal-no-preview">
+              <File size={48} />
+              <p>No se pudo cargar el archivo.</p>
             </div>
           )}
         </div>
