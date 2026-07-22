@@ -1,36 +1,24 @@
 import { google } from 'googleapis'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const drive = google.drive('v3')
 
 async function authenticate() {
-  let credentials
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL
 
-  const keyBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_B64
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-  const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH
+  if (!privateKey || !clientEmail) {
+    throw new Error('Faltan GOOGLE_PRIVATE_KEY o GOOGLE_CLIENT_EMAIL en variables de entorno')
+  }
 
-  if (keyBase64) {
-    try {
-      credentials = JSON.parse(Buffer.from(keyBase64, 'base64').toString('utf8'))
-    } catch (e) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY_B64 contains invalid base64/JSON: ' + e.message)
-    }
-  } else if (keyJson) {
-    try {
-      credentials = JSON.parse(keyJson)
-    } catch (e) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY contains invalid JSON: ' + e.message)
-    }
-  } else if (keyPath) {
-    credentials = JSON.parse(readFileSync(keyPath, 'utf8'))
-  } else {
-    throw new Error('No se encontró GOOGLE_SERVICE_ACCOUNT_KEY_B64, GOOGLE_SERVICE_ACCOUNT_KEY ni GOOGLE_SERVICE_ACCOUNT_KEY_PATH en variables de entorno')
+  const credentials = {
+    type: 'service_account',
+    project_id: process.env.GOOGLE_PROJECT_ID || 'control-personal-drive-502722',
+    private_key: privateKey.replace(/\\n/g, '\n'),
+    client_email: clientEmail,
+    client_id: process.env.GOOGLE_CLIENT_ID || '',
+    token_uri: 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(clientEmail)}`,
   }
 
   const auth = new google.auth.GoogleAuth({
