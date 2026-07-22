@@ -5,36 +5,27 @@ const drive = google.drive('v3')
 
 const DRIVE_OPTS = { supportsAllDrives: true, includeItemsFromAllDrives: true }
 
-async function authenticate() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL
+let oauth2Client = null
 
-  if (!privateKey || !clientEmail) {
-    throw new Error('Faltan GOOGLE_PRIVATE_KEY o GOOGLE_CLIENT_EMAIL en variables de entorno')
+function getOAuth2Client() {
+  if (!oauth2Client) {
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN
+
+    if (!clientId || !clientSecret || !refreshToken) {
+      throw new Error('Faltan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET o GOOGLE_REFRESH_TOKEN en variables de entorno')
+    }
+
+    oauth2Client = new google.auth.OAuth2(clientId, clientSecret)
+    oauth2Client.setCredentials({ refresh_token: refreshToken })
   }
-
-  const credentials = {
-    type: 'service_account',
-    project_id: process.env.GOOGLE_PROJECT_ID || 'control-personal-drive-502722',
-    private_key: privateKey.replace(/\\n/g, '\n'),
-    client_email: clientEmail,
-    client_id: process.env.GOOGLE_CLIENT_ID || '',
-    token_uri: 'https://oauth2.googleapis.com/token',
-    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
-    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(clientEmail)}`,
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  })
-
-  return auth
+  return oauth2Client
 }
 
 export async function uploadDocumento(file, trabajadorNombre) {
   try {
-    const auth = await authenticate()
+    const auth = getOAuth2Client()
     const parentFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID
 
     if (!parentFolderId) {
@@ -115,7 +106,7 @@ async function getOrCreateFolder(auth, folderName, parentId) {
 
 export async function deleteDocumento(fileId) {
   try {
-    const auth = await authenticate()
+    const auth = getOAuth2Client()
     await drive.files.delete({
       auth,
       fileId,
@@ -129,7 +120,7 @@ export async function deleteDocumento(fileId) {
 
 export async function getDocumentoLink(fileId) {
   try {
-    const auth = await authenticate()
+    const auth = getOAuth2Client()
     const response = await drive.files.get({
       auth,
       fileId,
