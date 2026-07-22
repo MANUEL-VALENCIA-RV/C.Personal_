@@ -11,20 +11,26 @@ const drive = google.drive('v3')
 async function authenticate() {
   let credentials
 
+  const keyBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_B64
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
   const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH
 
-  if (keyJson) {
+  if (keyBase64) {
+    try {
+      credentials = JSON.parse(Buffer.from(keyBase64, 'base64').toString('utf8'))
+    } catch (e) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY_B64 contains invalid base64/JSON: ' + e.message)
+    }
+  } else if (keyJson) {
     try {
       credentials = JSON.parse(keyJson)
     } catch (e) {
-      console.error('GOOGLE_SERVICE_ACCOUNT_KEY no es JSON válido:', e.message)
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY contains invalid JSON')
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY contains invalid JSON: ' + e.message)
     }
   } else if (keyPath) {
     credentials = JSON.parse(readFileSync(keyPath, 'utf8'))
   } else {
-    throw new Error('No se encontró GOOGLE_SERVICE_ACCOUNT_KEY ni GOOGLE_SERVICE_ACCOUNT_KEY_PATH en las variables de entorno')
+    throw new Error('No se encontró GOOGLE_SERVICE_ACCOUNT_KEY_B64, GOOGLE_SERVICE_ACCOUNT_KEY ni GOOGLE_SERVICE_ACCOUNT_KEY_PATH en variables de entorno')
   }
 
   const auth = new google.auth.GoogleAuth({
