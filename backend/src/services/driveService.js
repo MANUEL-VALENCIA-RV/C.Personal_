@@ -9,11 +9,18 @@ const __dirname = dirname(__filename)
 const drive = google.drive('v3')
 
 async function authenticate() {
-  const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || join(__dirname, '../../credentials-drive.json')
-  const keyFile = JSON.parse(readFileSync(keyPath, 'utf8'))
+  let credentials
+
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+  } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
+    credentials = JSON.parse(readFileSync(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH, 'utf8'))
+  } else {
+    credentials = JSON.parse(readFileSync(join(__dirname, '../../credentials-drive.json'), 'utf8'))
+  }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: keyFile,
+    credentials,
     scopes: ['https://www.googleapis.com/auth/drive'],
   })
 
