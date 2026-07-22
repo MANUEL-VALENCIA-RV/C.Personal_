@@ -53,20 +53,19 @@ router.get('/file/:driveFileId', async (req, res) => {
     const fileMeta = await drive.files.get({
       auth: oauth2,
       fileId: driveFileId,
-      fields: 'name, mimeType',
+      fields: 'name, mimeType, size',
       supportsAllDrives: true,
     })
 
-    const response = await drive.files.get({
-      auth: oauth2,
-      fileId: driveFileId,
-      alt: 'media',
-      supportsAllDrives: true,
-    })
+    const response = await drive.files.get(
+      { auth: oauth2, fileId: driveFileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'arraybuffer' }
+    )
 
     res.setHeader('Content-Type', fileMeta.data.mimeType || 'application/octet-stream')
+    res.setHeader('Content-Length', Buffer.byteLength(response.data))
     res.setHeader('Cache-Control', 'public, max-age=86400')
-    response.data.pipe(res)
+    res.send(Buffer.from(response.data))
   } catch (error) {
     console.error('Error proxying file:', error)
     res.status(500).json({ error: 'Error al obtener archivo de Drive' })
