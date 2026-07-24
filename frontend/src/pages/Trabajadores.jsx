@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Trash2, Search, ChevronLeft, ChevronRight, AlertTriangle, BrainCircuit, FileText as FileTextIcon } from 'lucide-react';
+import { Trash2, Search, ChevronLeft, ChevronRight, AlertTriangle, BrainCircuit, FileText as FileTextIcon, CheckCircle2, XCircle, File } from 'lucide-react';
 import { useTrabajadoresList, useEliminarTrabajador } from '../hooks/useTrabajadores.js';
 import { useEmpresas } from '../hooks/useEmpresas.js';
 import { establecerTrabajadorActivo, actualizarTrabajador } from '../db/api.js';
@@ -123,8 +123,8 @@ export default function Trabajadores(){
     if (empresa !== 'Todas' && t.empresa !== empresa) return false;
     if (pendienteFiltro === 'evaluacion') return !t.resultado_psicometrico?.ci_obtenido;
     if (pendienteFiltro === 'documentos') {
-      const cargados = t.documentos ? Object.values(t.documentos).filter(v => v).length : 0;
-      return cargados < documentacionCampos.length;
+      const subidos = t.documentosSubidos || [];
+      return subidos.length < documentacionCampos.length;
     }
     return true;
   });
@@ -188,9 +188,10 @@ export default function Trabajadores(){
         <tbody>
           {list.map(t=>{
             const tieneEvaluacion = t.resultado_psicometrico && t.resultado_psicometrico.ci_obtenido;
-            const documentosCargados = t.documentos ? Object.values(t.documentos).filter(v => v).length : 0;
-            const totalDocs = documentacionCampos.length
-            const docsCompletos = documentosCargados >= totalDocs;
+            const docsSubidos = t.documentosSubidos || [];
+            const docsSubidosNombres = new Set(docsSubidos.map(d => d.nombre));
+            const totalDocs = documentacionCampos.length;
+            const documentosCargados = docsSubidos.length;
 
             return (
               <tr key={t.id}>
@@ -234,9 +235,22 @@ export default function Trabajadores(){
                   )}
                 </td>
                 <td>
-                  <span className={docsCompletos ? 'status-ok' : 'status-bad'}>
-                    {documentosCargados} / {totalDocs}
-                  </span>
+                  <div className="docs-cell">
+                    <span className={`docs-count ${documentosCargados >= totalDocs ? 'docs-count-ok' : documentosCargados > 0 ? 'docs-count-partial' : 'docs-count-none'}`}>
+                      {documentosCargados}/{totalDocs}
+                    </span>
+                    <div className="docs-chips">
+                      {documentacionCampos.map(doc => {
+                        const cargado = docsSubidosNombres.has(doc);
+                        return (
+                          <span key={doc} className={`doc-chip ${cargado ? 'doc-chip-ok' : 'doc-chip-missing'}`} title={doc}>
+                            {cargado ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+                            <span className="doc-chip-label">{doc}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: '8px' }}>

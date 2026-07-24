@@ -11,6 +11,7 @@ const includeEmpresa = {
   observaciones: { orderBy: { createdAt: 'desc' } },
   CursosTrabajador: { orderBy: [{ fecha: 'desc' }, { id: 'desc' }] },
   eventosCalendario: { orderBy: { fecha: 'asc' } },
+  Documentos: { select: { id: true, nombre: true, mimeType: true, driveFileId: true } },
 }
 
 function serializar(t) {
@@ -20,8 +21,10 @@ function serializar(t) {
     empresaId: t.empresaRel?.id || t.empresaId,
     empresaColor: t.empresaRel?.color || null,
     cursos: t.CursosTrabajador || [],
+    documentosSubidos: t.Documentos || [],
     CursosTrabajador: undefined,
     empresaRel: undefined,
+    Documentos: undefined,
   }
 }
 

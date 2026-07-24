@@ -113,9 +113,8 @@ export default function Inicio() {
 
     const sinEvaluacion = trabajadores.filter(t => !t.resultado_psicometrico?.ci_obtenido)
     const docsIncompletos = trabajadores.filter(t => {
-        if (!t.documentos) return true
-        const cargados = Object.values(t.documentos).filter(v => v).length
-        return cargados < documentacionCampos.length
+        const subidos = t.documentosSubidos || []
+        return subidos.length < documentacionCampos.length
     })
     const inactivos = trabajadores.filter(t => t.estado !== 'Activo')
 
