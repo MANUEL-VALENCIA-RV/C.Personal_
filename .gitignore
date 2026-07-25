@@ -10,7 +10,9 @@ build/
 
 # Configuración del editor / IDE
 .idea/
+backend/.idea/
 .vercel/
+.directory
 
 # Logs
 *.log
@@ -51,3 +53,6 @@ backend/test-oauth.mjs
 backend/reset-password.js
 backend/create-shared-drive.mjs
 backend/list-drives.mjs
+backend/scripts-reset-users.js
+backend/scripts-get-token.js
+scripts/crear-usuario.ts
