@@ -1,0 +1,3 @@
+```javascript
+*** safe parse workers file without eval ***
+```
