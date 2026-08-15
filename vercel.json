@@ -2,7 +2,7 @@
   "version": 2,
   "installCommand": "pnpm install --prefix frontend",
   "buildCommand": "pnpm build --prefix frontend", 
-  "outputDirectory": "frontend/dist",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://c-personal-lxwj.onrender.com/api/$1" }
   ]
