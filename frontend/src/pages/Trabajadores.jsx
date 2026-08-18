@@ -61,6 +61,7 @@ export default function Trabajadores(){
   useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedQ(q)
+      setPage(1)
     }, 400)
     return () => clearTimeout(timeout)
   }, [q])
