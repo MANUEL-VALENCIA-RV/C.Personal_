@@ -24,7 +24,7 @@ export function obtenerCamposDocumentos() {
           if (campos.length) return campos
         }
       }
-    }
+   }
   } catch {}
   return [...CAMPOS_DEFAULT]
 }
